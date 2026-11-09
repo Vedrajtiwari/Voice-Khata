@@ -8,7 +8,7 @@ The repository ships two artefacts that share one idea:
 
 | Artefact | Purpose | Tech | Deploy target |
 | --- | --- | --- | --- |
-| `web/` | The premium counter app, its installable PWA shell and the `web/site/` landing page | Plain HTML/CSS/JS, no build step, no CDN | GitHub Pages |
+| `web/` | The welcome/sign-in page (`welcome.html`), the premium counter app, its installable PWA shell and the `web/site/` landing page | Plain HTML/CSS/JS, no build step, no CDN | GitHub Pages |
 | `app.py` + modules | The Python app that calls the Gnani STT/TTS APIs | Streamlit + SQLite | Streamlit Community Cloud |
 
 `web/` needs **no API key** — it uses the browser's own speech recognition and
@@ -17,6 +17,12 @@ The Python app is the one wired to Gnani and is the piece to show for the
 Gnani internship submission.
 
 ## The web app (`web/`)
+
+The first visit opens **`welcome.html`**: a proper introduction (what the app
+does, how it works), then **सेवा शुरू करें → sign in** with Google, mobile OTP or
+guest mode, and only then the counter. The counter redirects back to this page
+when there is no account and no guest pass, so the flow is the same whether the
+app is opened in a browser or installed from Android.
 
 - **Voice or manual entry** with a segmented control, live parse preview before saving.
 - **Trilingual parser** — Hindi, Hinglish, English, Marathi, Devanagari digits (`५०`), `₹`, and thousands separators (`₹1,200`).

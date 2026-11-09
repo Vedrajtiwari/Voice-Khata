@@ -63,7 +63,7 @@ const I18N = {
     micUnsupported: "यहाँ आवाज़ उपलब्ध नहीं",
     micUnsupportedHint: "लिखो टैब इस्तेमाल करें",
     micBlocked: "माइक बंद है",
-    micBlockedHint: "ब्राउज़र में माइक की अनुमति दें, फिर माइक दबाएं।",
+    micBlockedHint: "पता-बार के 🔒 आइकन → Microphone → Allow चुनें, फिर माइक दबाएं। बार-बार पूछे तो पहले Allow करें, फिर दोबारा दबाएं।",
     pulseTitle: "दिन की चाल",
     pulseSub: "आज की बिक्री एक नज़र में",
     pulseHint: "हर घंटे की बिक्री",
@@ -219,7 +219,7 @@ const I18N = {
     micUnsupported: "Voice unavailable here",
     micUnsupportedHint: "Use the Type tab instead",
     micBlocked: "Mic is blocked",
-    micBlockedHint: "Allow the microphone in your browser, then tap the mic again.",
+    micBlockedHint: "Open the 🔒 icon in the address bar → Microphone → Allow, then tap the mic again.",
     pulseTitle: "Day pulse",
     pulseSub: "Today's sales at a glance",
     pulseHint: "Sales by hour",
@@ -375,7 +375,7 @@ const I18N = {
     micUnsupported: "इथे आवाज उपलब्ध नाही",
     micUnsupportedHint: "टाइप करा टॅब वापरा",
     micBlocked: "मायक्रोफोन बंद आहे",
-    micBlockedHint: "ब्राउझरमध्ये मायक्रोफोनची परवानगी द्या, मग पुन्हा माइक दाबा.",
+    micBlockedHint: "अ‍ॅड्रेस बारमधील 🔒 चिन्ह → Microphone → Allow निवडा, मग माइक दाबा.",
     pulseTitle: "दिवसाची चाल",
     pulseSub: "आजची विक्री एका दृष्टीक्षेपात",
     pulseHint: "प्रत्येक तासाची विक्री",
@@ -638,9 +638,14 @@ function persist() {
 
 const state = load();
 const ACCOUNT_KEY = "voicekhata.account";
+const GUEST_KEY = "voicekhata.guest";
 
 function loadAccount() {
   try { return JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "null"); } catch { return null; }
+}
+
+function hasGuestPass() {
+  try { return localStorage.getItem(GUEST_KEY) === "1"; } catch { return false; }
 }
 
 state.account = loadAccount();
@@ -752,6 +757,10 @@ let listening = false;
 let interimText = "";
 let finalHandled = false;
 let micBlocked = false;
+let micStream = null;
+let micRequest = null;
+let micCtx = null;
+let micChecking = false;
 
 function setMicBlocked(blocked) {
   micBlocked = blocked;
@@ -765,22 +774,37 @@ function setMicBlocked(blocked) {
   }
 }
 
-/* The microphone has to be opened once through getUserMedia: this is what
-   actually triggers the browser prompt, and it tells us when the site is
-   blocked so the user gets instructions instead of silence. */
-async function ensureMicPermission() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+/* One shared microphone stream. It is opened the first time the shopkeeper
+   asks for it and then kept alive (silently) so the browser stops repeating
+   the Allow/Deny popup on every tap. */
+async function ensureMicStream() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return null;
+  if (micStream && micStream.getAudioTracks().some((track) => track.readyState === "live")) return micStream;
+  if (micRequest) return micRequest;
+  micRequest = navigator.mediaDevices
+    .getUserMedia({ audio: true })
+    .then((stream) => {
+      micStream = stream;
+      stream.getAudioTracks().forEach((track) => {
+        track.onended = () => { if (micStream === stream) micStream = null; };
+      });
+      return stream;
+    })
+    .catch(() => null)
+    .finally(() => { micRequest = null; });
+  return micRequest;
+}
+
+async function micPermissionState() {
   try {
     if (navigator.permissions && navigator.permissions.query) {
       const status = await navigator.permissions.query({ name: "microphone" });
-      if (status.state === "denied") return false;
+      return status.state;
     }
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((track) => track.stop());
-    return true;
   } catch {
-    return false;
+    /* Safari does not expose the microphone permission query */
   }
+  return "unknown";
 }
 
 function buildRecognition() {
@@ -860,30 +884,38 @@ function buildRecognition() {
   return rec;
 }
 
-async function startListening() {
+function startListening() {
   if (!speechOk) {
     showBanner("error", t("errSupport"), t("errSupportSub"));
     switchMode("manual");
     return;
   }
   if (listening) {
-    recognition && recognition.stop();
+    try { recognition && recognition.stop(); } catch { /* already stopping */ }
     return;
   }
-  hideBanner();
-  const allowed = await ensureMicPermission();
-  if (!allowed) {
+  /* Once the browser has blocked the mic, stop asking again and again — show
+     the fix instead, so the popup does not keep coming back. */
+  if (micBlocked) {
     setMicBlocked(true);
     showBanner("error", t("errPerm"), t("errPermSub"));
     return;
   }
-  setMicBlocked(false);
+  hideBanner();
   if (!recognition) recognition = buildRecognition();
   recognition.lang = LANGS[state.settings.lang].speech;
+  /* Start right inside the tap. Awaiting getUserMedia here used to drop the
+     browser's user activation, so recognition silently refused to start and
+     the shopkeeper saw nothing at all. The speech engine asks for the mic
+     itself, exactly once, the first time. */
+  el.micStage.classList.add("is-processing");
+  el.micLabel.textContent = t("micListening");
   try {
     recognition.start();
   } catch {
-    /* start() throws when already running; the listening guard covers it */
+    setTimeout(() => {
+      try { recognition.start(); } catch { /* engine still shutting down */ }
+    }, 350);
   }
 }
 
@@ -1397,12 +1429,16 @@ function renderAccount() {
 }
 
 function signOutAccount() {
-  try { localStorage.removeItem(ACCOUNT_KEY); } catch { /* storage may be blocked */ }
+  try {
+    localStorage.removeItem(ACCOUNT_KEY);
+    localStorage.removeItem(GUEST_KEY);
+  } catch { /* storage may be blocked */ }
   state.account = null;
   renderAccount();
   renderProfile();
   closeDrawer();
   toast(t("signedOut"));
+  setTimeout(() => location.assign("welcome.html"), 700);
 }
 
 function scrollToCard(node) {
@@ -1420,30 +1456,38 @@ async function runMicCheck() {
     showBanner("error", t("micCheckFail"), t("errSupportSub"));
     return;
   }
+  if (micChecking) return;
+  micChecking = true;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await ensureMicStream();
+    if (!stream) {
+      micChecking = false;
+      setMicBlocked(true);
+      showBanner("error", t("errPerm"), t("errPermSub"));
+      return;
+    }
     setMicBlocked(false);
     hideBanner();
     el.micCheck.classList.add("is-live");
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     const bars = el.micLevel ? Array.from(el.micLevel.querySelectorAll("i")) : [];
     if (!AudioCtx) {
-      stream.getTracks().forEach((track) => track.stop());
+      micChecking = false;
       toast(t("micWorking"));
       return;
     }
-    const ctx = new AudioCtx();
-    const source = ctx.createMediaStreamSource(stream);
-    const analyser = ctx.createAnalyser();
+    if (!micCtx || micCtx.state === "closed") micCtx = new AudioCtx();
+    if (micCtx.state === "suspended") micCtx.resume().catch(() => {});
+    const analyser = micCtx.createAnalyser();
     analyser.fftSize = 128;
-    source.connect(analyser);
+    micCtx.createMediaStreamSource(stream).connect(analyser);
     const data = new Uint8Array(analyser.frequencyBinCount);
     const started = performance.now();
     let frame = 0;
     const stop = () => {
       cancelAnimationFrame(frame);
-      stream.getTracks().forEach((track) => track.stop());
-      if (ctx.close) ctx.close();
+      try { analyser.disconnect(); } catch { /* already detached */ }
+      micChecking = false;
       el.micCheck.classList.remove("is-live");
       toast(t("micWorking"));
     };
@@ -1459,6 +1503,7 @@ async function runMicCheck() {
     };
     loop();
   } catch {
+    micChecking = false;
     setMicBlocked(true);
     showBanner("error", t("micCheckFail"), t("errPermSub"));
   }
@@ -1533,6 +1578,11 @@ function bindCatalogSlider() {
 }
 
 function init() {
+  /* Intro → sign-in → counter. A guest pass skips only the account step. */
+  if (!state.account && !hasGuestPass()) {
+    location.replace("welcome.html");
+    return;
+  }
   applyTheme(state.settings.theme, false);
   applyLanguage(state.settings.lang);
   setToggle("voiceConfirm", state.settings.voiceConfirm !== false);
@@ -1555,7 +1605,11 @@ function init() {
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions
         .query({ name: "microphone" })
-        .then((status) => { if (status.state === "denied") setMicBlocked(true); })
+        .then((status) => {
+          const sync = () => setMicBlocked(status.state === "denied");
+          sync();
+          status.onchange = sync;
+        })
         .catch(() => {});
     }
   }
