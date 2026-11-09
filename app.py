@@ -3,6 +3,7 @@
 import csv
 import hashlib
 from io import StringIO
+from pathlib import Path
 
 import streamlit as st
 
@@ -35,6 +36,8 @@ st.markdown(
 
 if "last_audio" not in st.session_state:
     st.session_state.last_audio = None
+
+LOGO_PATH = Path(__file__).parent / "assets" / "voicekhata-logo.svg"
 
 
 def handle_text(text, voice_reply=True):
@@ -81,8 +84,12 @@ with st.sidebar:
         st.caption("chawal · atta · doodh · cheeni · namak · tel · dal · chai · biscuit · haldi · sabun")
 
 
-st.markdown('<p class="brand">VoiceKhata <span class="pill">खाता, अब आवाज़ से</span></p>', unsafe_allow_html=True)
-st.markdown('<p class="tagline">A simple Hindi/Hinglish sales ledger for busy kirana shops.</p>', unsafe_allow_html=True)
+logo_col, brand_col = st.columns([0.1, 0.9], vertical_alignment="center")
+with logo_col:
+    st.image(str(LOGO_PATH), width=68)
+with brand_col:
+    st.markdown('<p class="brand">VoiceKhata <span class="pill">खाता, अब आवाज़ से</span></p>', unsafe_allow_html=True)
+    st.markdown('<p class="tagline">A simple Hindi/Hinglish sales ledger for busy kirana shops.</p>', unsafe_allow_html=True)
 
 if show_tips:
     st.info("Try: **2 kilo chawal 50 rupay** · **do doodh 60** · **१ atta ४०**", icon="💡")

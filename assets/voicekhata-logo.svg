@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">VoiceKhata logo</title>
+  <desc id="desc">A speech bubble shaped ledger with an audio waveform and rupee symbol.</desc>
+  <defs>
+    <linearGradient id="mint" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E6F4EF"/>
+      <stop offset="1" stop-color="#BFE9D8"/>
+    </linearGradient>
+  </defs>
+  <path d="M39 31h178c14 0 25 11 25 25v99c0 14-11 25-25 25H116l-47 39 10-39H39c-14 0-25-11-25-25V56c0-14 11-25 25-25Z" fill="#183B56"/>
+  <path d="M52 52h152c8 0 14 6 14 14v79c0 8-6 14-14 14H108l-25 21 5-21H52c-8 0-14-6-14-14V66c0-8 6-14 14-14Z" fill="url(#mint)"/>
+  <path d="M71 78h114" stroke="#183B56" stroke-width="10" stroke-linecap="round" opacity=".9"/>
+  <path d="M72 108h20m12 0h25m16 0h28M72 134h33m15 0h28m14 0h12" stroke="#16735B" stroke-width="8" stroke-linecap="round" opacity=".9"/>
+  <path d="M73 162c7-18 15-18 22 0 7 18 15 18 22 0 7-18 15-18 22 0 7 18 15 18 22 0 7-18 15-18 22 0" fill="none" stroke="#E56B6F" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="182" cy="79" r="22" fill="#F2B84B"/>
+  <path d="M174 70h15m-13 7h11m-5-12v27m-8-5c4 4 10 5 15 1" fill="none" stroke="#183B56" stroke-width="4" stroke-linecap="round"/>
+</svg>
