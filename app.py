@@ -73,7 +73,7 @@ with st.sidebar:
     show_tips = st.toggle("Show quick tips", value=True)
     st.divider()
     if has_api_key():
-        st.success("Gnani API connected", icon="✅")
+        st.info("Gnani key configured", icon="🔑")
     else:
         st.warning("Gnani API key not set", icon="⚠️")
         st.caption("Typed entries still work. Add GNANI_API_KEY for Bolo and voice replies.")

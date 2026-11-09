@@ -3,8 +3,8 @@ import requests
 
 BASE_URL = "https://api.vachana.ai"
 STT_MODEL = os.environ.get("GNANI_STT_MODEL", "prisma-v2.5")
-TTS_VOICE = os.environ.get("GNANI_TTS_VOICE", "Pranav")
-TTS_MODEL = os.environ.get("GNANI_TTS_MODEL", "timbre-v2.0")
+TTS_VOICE = os.environ.get("GNANI_TTS_VOICE", "Nalini")
+TTS_MODEL = os.environ.get("GNANI_TTS_MODEL", "timbre-v2.5")
 LANGUAGE = "hi-IN"
 
 
@@ -41,11 +41,14 @@ def _check(resp):
 
 def transcribe(audio_bytes):
     """Prisma speech-to-text. Returns the transcript string."""
+    payload = {"language_code": LANGUAGE}
+    if STT_MODEL:
+        payload["model"] = STT_MODEL
     resp = requests.post(
         f"{BASE_URL}/stt/v3",
         headers={"X-API-Key-ID": _api_key()},
         files={"audio_file": ("recording.wav", audio_bytes, "audio/wav")},
-        data={"language_code": LANGUAGE, "model": STT_MODEL},
+        data=payload,
         timeout=60,
     )
     _check(resp)
@@ -59,7 +62,19 @@ def speak(text):
         resp = requests.post(
             f"{BASE_URL}/api/v1/tts/inference",
             headers={"X-API-Key-ID": _api_key(), "Content-Type": "application/json"},
-            json={"text": text, "voice": TTS_VOICE, "model": TTS_MODEL},
+            json={
+                "text": text,
+                "voice": TTS_VOICE,
+                "model": TTS_MODEL,
+                "language": LANGUAGE,
+                "audio_config": {
+                    "encoding": "linear_pcm",
+                    "container": "wav",
+                    "num_channels": 1,
+                    "sample_rate": 48000,
+                    "sample_width": 2,
+                },
+            },
             timeout=60,
         )
         _check(resp)
