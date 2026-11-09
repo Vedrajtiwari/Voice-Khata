@@ -14,6 +14,8 @@
 </head>
 <body>
 
+<div class="progress" id="progress" aria-hidden="true"></div>
+
 <svg class="sprite" aria-hidden="true" focusable="false">
   <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
@@ -25,23 +27,29 @@
   <symbol id="i-store" viewBox="0 0 24 24"><path d="M4 9.5V20h16V9.5"/><path d="M3 9.5 5 4h14l2 5.5a3 3 0 0 1-5.6 1.4 3 3 0 0 1-5.4 0A3 3 0 0 1 3 9.5Z"/><path d="M9.5 20v-4.5h5V20"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18 15 15 0 0 1 0-18Z"/></symbol>
   <symbol id="i-offline" viewBox="0 0 24 24"><path d="M5 12.5a7 7 0 0 1 11.5-5.4M19 11.5a7 7 0 0 1-2 9"/><path d="m3 3 18 18"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/><circle cx="12" cy="12" r="3"/></symbol>
 </svg>
 
-<header class="nav">
+<header class="nav" id="nav">
   <div class="shell nav__inner">
     <a class="brand" href="../">
       <img src="../icons/icon.svg" alt="" width="32" height="32" />
       <span class="brand__name">VoiceKhata</span>
     </a>
-    <nav class="nav__links" aria-label="Primary">
+    <nav class="nav__links" id="navLinks" aria-label="Primary">
+      <a href="#demo">आज़माओ</a>
       <a href="#features">फ़ीचर</a>
       <a href="#how">कैसे चलता है</a>
       <a href="#languages">भाषाएँ</a>
+      <a href="#faq">सवाल</a>
     </nav>
     <a class="btn btn--dark btn--sm nav__cta" href="../">
       काउंटर खोलें
       <svg class="ic"><use href="#i-arrow"/></svg>
     </a>
+    <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
 
@@ -68,8 +76,8 @@
             <svg class="ic"><use href="#i-mic"/></svg>
             मुफ़्त काउंटर खोलें
           </a>
-          <a class="btn btn--ghost" href="#features">
-            फ़ीचर देखें
+          <a class="btn btn--ghost" href="#demo">
+            खुद आज़माओ
             <svg class="ic"><use href="#i-arrow"/></svg>
           </a>
         </div>
@@ -137,9 +145,44 @@
   <!-- STATS -->
   <section class="stats">
     <div class="shell stats__grid">
-      <div class="stat reveal"><b>3</b><span>भाषाएँ — हिंदी, English, मराठी</span></div>
-      <div class="stat reveal" style="--i:1"><b>1</b><span>बोलना काफ़ी — बाकी अपने आप</span></div>
-      <div class="stat reveal" style="--i:2"><b>0</b><span>सेटअप, लॉगिन और शुल्क</span></div>
+      <div class="stat reveal"><b data-count="3">0</b><span>भाषाएँ — हिंदी, English, मराठी</span></div>
+      <div class="stat reveal" style="--i:1"><b data-count="1">0</b><span>बोलना काफ़ी — बाकी अपने आप</span></div>
+      <div class="stat reveal" style="--i:2"><b data-count="0">0</b><span>सेटअप, लॉगिन और शुल्क</span></div>
+    </div>
+  </section>
+
+  <!-- LIVE DEMO -->
+  <section class="section demo" id="demo">
+    <div class="shell">
+      <header class="section__head">
+        <p class="eyebrow"><span class="dot"></span> बिना डाउनलोड, यहीं आज़माओ</p>
+        <h2 class="section__title">एक लाइन लिखो, नतीजा देखो।</h2>
+        <p class="section__sub">ऐप में यही समझदारी असली बिक्री पर चलती है — यहाँ सिर्फ़ झलक है।</p>
+      </header>
+
+      <div class="demo__card reveal">
+        <div class="demo__head">
+          <span class="demo__dot"></span>
+          <span>लाइव डेमो</span>
+          <span class="demo__hint">हिंदी · English · मराठी</span>
+        </div>
+        <label class="demo__label" for="demoInput">अपनी बिक्री लिखो</label>
+        <div class="demo__row">
+          <input id="demoInput" type="text" value="2 किलो चावल 50 रुपये" autocomplete="off" spellcheck="false" />
+          <button class="btn btn--primary" id="demoBtn" type="button">
+            <svg class="ic"><use href="#i-spark"/></svg>
+            समझो
+          </button>
+        </div>
+        <div class="demo__out" id="demoOut" aria-live="polite"></div>
+        <div class="demo__chips" id="demoChips">
+          <button type="button">2 किलो चावल 50</button>
+          <button type="button">1 दूध 60</button>
+          <button type="button">3 साबुन 90</button>
+          <button type="button">2 किलो तांदूळ 100</button>
+          <button type="button">1 atta ५०</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -266,6 +309,40 @@
     </div>
   </section>
 
+  <!-- FAQ -->
+  <section class="section section--tint" id="faq">
+    <div class="shell faq__grid">
+      <header class="section__head faq__head">
+        <p class="eyebrow"><span class="dot"></span> सवाल</p>
+        <h2 class="section__title">जो अक्सर पूछा जाता है।</h2>
+        <p class="section__sub">और भी सवाल हों तो काउंटर खोलकर देख लो — बिना रजिस्ट्रेशन।</p>
+      </header>
+
+      <div class="faq">
+        <details class="faq__item" open>
+          <summary>क्या मुझे लॉगिन या OTP करना पड़ेगा?<span class="faq__icon">+</span></summary>
+          <p>नहीं। काउंटर खोलते ही चालू — नाम, नंबर या OTP कुछ नहीं।</p>
+        </details>
+        <details class="faq__item">
+          <summary>मेरी बिक्री का डेटा कहाँ रहता है?<span class="faq__icon">+</span></summary>
+          <p>आपके ब्राउज़र में, इसी डिवाइस पर। जब चाहें <strong>Export CSV</strong> से बैकअप निकाल लें — फ़ाइल Excel या Google Sheets में खुलती है।</p>
+        </details>
+        <details class="faq__item">
+          <summary>इंटरनेट बंद हो तो चलेगा?<span class="faq__icon">+</span></summary>
+          <p>खाता, टाइप एंट्री और CSV — हाँ, ऑफ़लाइन चलते हैं। आवाज़ पहचानने के लिए ब्राउज़र की स्पीच सेवा इंटरनेट चाहती है; तब लिखो मोड काम आता है।</p>
+        </details>
+        <details class="faq__item">
+          <summary>क्या यह मुफ़्त है?<span class="faq__icon">+</span></summary>
+          <p>हाँ — कोई सब्सक्रिप्शन, कोई ट्रायल, कोई विज्ञापन नहीं।</p>
+        </details>
+        <details class="faq__item">
+          <summary>क्या मैं इसे फ़ोन पर ऐप की तरह रख सकता हूँ?<span class="faq__icon">+</span></summary>
+          <p>Chrome में साइट खोलकर <strong>Add to Home screen</strong> चुनें — होम स्क्रीन से फुल-स्क्रीन ऐप की तरह चलेगा।</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <!-- CTA -->
   <section class="cta">
     <div class="shell cta__inner">
@@ -283,33 +360,151 @@
 </main>
 
 <footer class="foot">
-  <div class="shell foot__inner">
-    <div class="brand">
-      <img src="../icons/icon.svg" alt="" width="28" height="28" />
-      <span class="brand__name">VoiceKhata</span>
+  <div class="shell foot__grid">
+    <div class="foot__brand">
+      <div class="brand">
+        <img src="../icons/icon.svg" alt="" width="28" height="28" />
+        <span class="brand__name">VoiceKhata</span>
+      </div>
+      <p class="foot__note">किराना काउंटर के लिए बना, आवाज़ से चलने वाला खाता।</p>
     </div>
-    <p class="foot__note">किराना काउंटर के लिए बना, आवाज़ से चलने वाला खाता।</p>
-    <p class="foot__meta">© <span id="year">2026</span> VoiceKhata · हिंदी · English · मराठी</p>
+    <nav class="foot__links" aria-label="Footer">
+      <a href="#demo">लाइव डेमो</a>
+      <a href="#features">फ़ीचर</a>
+      <a href="#how">कैसे चलता है</a>
+      <a href="#faq">सवाल</a>
+    </nav>
+    <p class="foot__meta">© <span id="year">2026</span> VoiceKhata<br />हिंदी · English · मराठी</p>
   </div>
 </footer>
 
 <script>
   document.getElementById("year").textContent = new Date().getFullYear();
 
-  const targets = document.querySelectorAll(".reveal");
-  if ("IntersectionObserver" in window) {
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
+  /* ---------- scroll progress ---------- */
+  const progress = document.getElementById("progress");
+  const paintProgress = () => {
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    progress.style.transform = `scaleX(${max > 0 ? Math.min(1, window.scrollY / max) : 0})`;
+  };
+  paintProgress();
+  window.addEventListener("scroll", paintProgress, { passive: true });
+
+  /* ---------- mobile nav ---------- */
+  const nav = document.getElementById("nav");
+  const navToggle = document.getElementById("navToggle");
+  navToggle.addEventListener("click", () => {
+    const open = nav.classList.toggle("nav--open");
+    navToggle.setAttribute("aria-expanded", String(open));
+  });
+  document.querySelectorAll("#navLinks a").forEach((link) =>
+    link.addEventListener("click", () => {
+      nav.classList.remove("nav--open");
+      navToggle.setAttribute("aria-expanded", "false");
+    })
+  );
+
+  /* ---------- reveal + counters ---------- */
+  const countUp = (node) => {
+    const target = Number(node.dataset.count || 0);
+    if (!target) { node.textContent = "0"; return; }
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - start) / 750);
+      node.textContent = String(Math.round(target * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  const observer = "IntersectionObserver" in window
+    ? new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
           entry.target.classList.add("is-in");
-          io.unobserve(entry.target);
-        }
-      });
-    }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 });
-    targets.forEach((el) => io.observe(el));
-  } else {
-    targets.forEach((el) => el.classList.add("is-in"));
+          entry.target.querySelectorAll("[data-count]").forEach(countUp);
+          observer.unobserve(entry.target);
+        });
+      }, { rootMargin: "0px 0px -8% 0px", threshold: 0.12 })
+    : null;
+
+  document.querySelectorAll(".reveal").forEach((el) => {
+    if (observer) observer.observe(el);
+    else {
+      el.classList.add("is-in");
+      el.querySelectorAll("[data-count]").forEach(countUp);
+    }
+  });
+
+  /* ---------- live demo parser ---------- */
+  const ITEMS = [
+    { name: "चावल", words: ["chawal", "rice", "चावल", "तांदूळ", "tandul"] },
+    { name: "आटा", words: ["atta", "wheat", "flour", "आटा", "पीठ"] },
+    { name: "दूध", words: ["doodh", "milk", "दूध"] },
+    { name: "चीनी", words: ["cheeni", "sugar", "चीनी", "साखर"] },
+    { name: "नमक", words: ["namak", "salt", "नमक", "मीठ"] },
+    { name: "तेल", words: ["tel", "oil", "तेल"] },
+    { name: "दाल", words: ["dal", "daal", "lentils", "दाल", "डाळ"] },
+    { name: "चाय", words: ["chai", "tea", "चाय", "चहा"] },
+    { name: "साबुन", words: ["sabun", "soap", "साबुन", "साबण"] },
+    { name: "बिस्कुट", words: ["biscuit", "बिस्कुट", "बिस्कीट"] },
+  ];
+  const NUMBERS = { ek: 1, do: 2, teen: 3, char: 4, chaar: 4, paanch: 5, panch: 5, chhe: 6, saat: 7, aath: 8, nau: 9, das: 10, "एक": 1, "दो": 2, "तीन": 3, "चार": 4, "पांच": 5, "पाँच": 5, "छह": 6, "सात": 7, "आठ": 8, "नौ": 9, "दस": 10 };
+  const UNITS = [
+    { words: ["kilo", "kg", "किलो"], label: "kg" },
+    { words: ["litre", "liter", "ltr", "लीटर", "लिटर"], label: "L" },
+    { words: ["packet", "pkt", "पैकेट"], label: "pkt" },
+    { words: ["piece", "pc", "पीस", "नग"], label: "pc" },
+  ];
+  const deva = { "०": "0", "१": "1", "२": "2", "३": "3", "४": "4", "५": "5", "६": "6", "७": "7", "८": "8", "९": "9" };
+
+  const demoInput = document.getElementById("demoInput");
+  const demoOut = document.getElementById("demoOut");
+
+  function parseDemo(raw) {
+    const text = String(raw || "")
+      .replace(/[०-९]/g, (d) => deva[d])
+      .replace(/[₹$]/g, " ")
+      .replace(/(\d),(\d)/g, "$1$2")
+      .toLowerCase()
+      .trim();
+    if (!text) return { ok: false, reason: "empty" };
+    const item = ITEMS.find((entry) => entry.words.some((w) => text.includes(w)));
+    const tokens = text.split(/[^0-9a-z\u0900-\u097F]+/i).filter(Boolean);
+    const nums = tokens.map((t) => (/^\d+(\.\d+)?$/.test(t) ? Number(t) : NUMBERS[t])).filter((n) => n !== undefined);
+    if (!item) return { ok: false, reason: "item" };
+    if (!nums.length) return { ok: false, reason: "amount" };
+    const unit = UNITS.find((u) => u.words.some((w) => tokens.includes(w)));
+    const qty = nums.length > 1 ? nums[0] : 1;
+    const amount = nums.length > 1 ? nums[1] : nums[0];
+    return { ok: true, item: item.name, qty, amount, unit: unit ? unit.label : "" };
   }
+
+  function renderDemo() {
+    const result = parseDemo(demoInput.value);
+    if (!result.ok) {
+      const message = result.reason === "empty"
+        ? "पहले कुछ लिखो — जैसे “2 किलो चावल 50”।"
+        : "सामान, मात्रा या रकम साफ़ लिखो — जैसे “1 दूध 60”।";
+      demoOut.innerHTML = `<span class="demo__chip is-bad">${message}</span>`;
+      return;
+    }
+    demoOut.innerHTML = `
+      <span class="demo__chip">✓ ${result.qty}${result.unit ? " " + result.unit : ""} ${result.item}</span>
+      <span class="demo__chip demo__chip--money">₹${result.amount}</span>
+      <span class="demo__note">सेव करने के लिए तैयार — असली ऐप में यह सीधे खाते में जाता है।</span>`;
+  }
+
+  document.getElementById("demoBtn").addEventListener("click", renderDemo);
+  demoInput.addEventListener("input", renderDemo);
+  document.querySelectorAll("#demoChips button").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      demoInput.value = chip.textContent;
+      renderDemo();
+      demoInput.focus();
+    });
+  });
+  renderDemo();
 </script>
 </body>
 </html>

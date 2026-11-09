@@ -1417,6 +1417,175 @@ kbd {
   .toasts { bottom: 14px; }
 }
 
+/* ---------------- day pulse ---------------- */
+.pulse { overflow: hidden; }
+.pulse__badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+  border-radius: var(--r-pill);
+  padding: 5px 11px;
+  white-space: nowrap;
+}
+.pulse__chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 108px;
+  margin-top: 16px;
+  padding: 6px 2px 0;
+  border-radius: var(--r-md);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary-soft) 55%, transparent), transparent 78%);
+}
+.pulse__bar {
+  position: relative;
+  flex: 1 1 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.pulse__bar i {
+  display: block;
+  width: 100%;
+  max-width: 20px;
+  height: var(--h, 3%);
+  border-radius: 5px 5px 2px 2px;
+  background: color-mix(in srgb, var(--line-strong) 55%, transparent);
+  transform-origin: bottom;
+  transition: background 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.pulse__bar.is-live i {
+  background: linear-gradient(180deg, var(--primary), color-mix(in srgb, var(--primary) 62%, transparent));
+  box-shadow: 0 4px 12px -6px color-mix(in srgb, var(--primary) 80%, transparent);
+  animation: barUp 0.7s var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 26ms);
+}
+.pulse__bar:hover i { transform: scaleY(1.04); filter: brightness(1.08); }
+.pulse__bar b { font-size: 9px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+@keyframes barUp {
+  from { transform: scaleY(0); opacity: 0.3; }
+  60% { transform: scaleY(1.06); opacity: 1; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+.pulse__caption { font-size: 10.5px; color: var(--muted); margin-top: 6px; text-align: right; }
+.pulse__facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.pulse__fact {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  transition: transform 0.24s var(--ease), border-color 0.24s var(--ease), background 0.24s var(--ease);
+}
+.pulse__fact:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--primary) 28%, transparent);
+  background: color-mix(in srgb, var(--primary-soft) 55%, var(--surface));
+}
+.pulse__fact span {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pulse__fact b {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- mic hint / blocked ---------------- */
+.mic-hint {
+  margin-top: 10px;
+  max-width: 330px;
+  padding: 6px 13px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
+  color: var(--danger);
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.4;
+  z-index: 2;
+  animation: panelIn 0.3s var(--ease-out) both;
+}
+.mic-stage.is-blocked .mic-btn {
+  background: linear-gradient(160deg, var(--surface-2), var(--surface));
+  color: var(--danger);
+  border-color: var(--danger-line);
+  box-shadow: inset 0 0 0 1px var(--danger-line);
+}
+.mic-stage.is-blocked .mic-aura { animation: none; opacity: 0.04; }
+
+/* ---------------- extra premium polish ---------------- */
+.counter-strip {
+  background: linear-gradient(115deg, var(--surface), color-mix(in srgb, var(--primary) 7%, var(--surface)));
+}
+.card:hover { transform: translateY(-2px); }
+.card__head .tag--today { animation: tagGlow 3.4s var(--ease) infinite; }
+@keyframes tagGlow {
+  0%, 100% { box-shadow: 0 0 0 0 var(--primary-ring); }
+  55% { box-shadow: 0 0 0 5px transparent; }
+}
+.metric--cash::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 28%, color-mix(in srgb, var(--primary) 13%, transparent) 50%, transparent 72%);
+  transform: translateX(-120%);
+  animation: sheen 7s var(--ease) infinite;
+  pointer-events: none;
+}
+@keyframes sheen {
+  0%, 62% { transform: translateX(-120%); }
+  82%, 100% { transform: translateX(120%); }
+}
+.btn--primary { position: relative; overflow: hidden; }
+.btn--primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.32), transparent 60%);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease);
+}
+.btn--primary:active::after { opacity: 1; transform: scale(1.1); transition-duration: 0.08s; }
+
+@media (max-width: 720px) {
+  .pulse__facts { grid-template-columns: 1fr 1fr; }
+  .pulse__fact:last-child { grid-column: 1 / -1; }
+  .pulse__chart { height: 92px; gap: 3px; }
+  .pulse__bar b { font-size: 8px; }
+}
+
+@media (max-width: 460px) {
+  .pulse__bar:nth-child(even) b { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;

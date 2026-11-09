@@ -62,6 +62,17 @@ const I18N = {
     micProcessing: "समझ रहा हूँ…",
     micUnsupported: "यहाँ आवाज़ उपलब्ध नहीं",
     micUnsupportedHint: "लिखो टैब इस्तेमाल करें",
+    micBlocked: "माइक बंद है",
+    micBlockedHint: "ब्राउज़र में माइक की अनुमति दें, फिर माइक दबाएं।",
+    pulseTitle: "दिन की चाल",
+    pulseSub: "आज की बिक्री एक नज़र में",
+    pulseHint: "हर घंटे की बिक्री",
+    pulsePeak: "सबसे व्यस्त घंटा",
+    pulseTop: "सबसे ज़्यादा बिका",
+    pulseBestBill: "सबसे बड़ा बिल",
+    pulseBadge: "बिल",
+    pulseNone: "अभी डेटा नहीं",
+    errParseHint: "सामान, मात्रा और रकम जोड़कर सेव करें",
     saleLabel: "बिक्री की जानकारी",
     salePlaceholder: "2 किलो चावल 50 रुपये",
     saleHelp: "उदाहरण: 2 किलो चावल 50 रुपये · १ आटा ४० · देवनागरी अंक भी चलेंगे",
@@ -189,6 +200,17 @@ const I18N = {
     micProcessing: "Understanding…",
     micUnsupported: "Voice unavailable here",
     micUnsupportedHint: "Use the Type tab instead",
+    micBlocked: "Mic is blocked",
+    micBlockedHint: "Allow the microphone in your browser, then tap the mic again.",
+    pulseTitle: "Day pulse",
+    pulseSub: "Today's sales at a glance",
+    pulseHint: "Sales by hour",
+    pulsePeak: "Peak hour",
+    pulseTop: "Top seller",
+    pulseBestBill: "Biggest bill",
+    pulseBadge: "bills",
+    pulseNone: "No data yet",
+    errParseHint: "Add the item, quantity or amount, then save",
     saleLabel: "Sale details",
     salePlaceholder: "2 kilo chawal 50 rupay",
     saleHelp: "Example: 2 kilo chawal 50 rupay · १ atta ४० · Devanagari digits work",
@@ -316,6 +338,17 @@ const I18N = {
     micProcessing: "समजून घेत आहे…",
     micUnsupported: "इथे आवाज उपलब्ध नाही",
     micUnsupportedHint: "टाइप करा टॅब वापरा",
+    micBlocked: "मायक्रोफोन बंद आहे",
+    micBlockedHint: "ब्राउझरमध्ये मायक्रोफोनची परवानगी द्या, मग पुन्हा माइक दाबा.",
+    pulseTitle: "दिवसाची चाल",
+    pulseSub: "आजची विक्री एका दृष्टीक्षेपात",
+    pulseHint: "प्रत्येक तासाची विक्री",
+    pulsePeak: "सर्वात व्यस्त तास",
+    pulseTop: "सर्वाधिक विकले",
+    pulseBestBill: "सर्वात मोठे बिल",
+    pulseBadge: "बिले",
+    pulseNone: "अजून डेटा नाही",
+    errParseHint: "वस्तू, प्रमाण किंवा रक्कम जोडून जतन करा",
     saleLabel: "विक्रीचा तपशील",
     salePlaceholder: "2 किलो तांदूळ 50 रुपये",
     saleHelp: "उदाहरण: 2 किलो तांदूळ 50 रुपये · १ पीठ ४० · देवनागरी अंक चालतात",
@@ -563,6 +596,13 @@ const el = {
   micStage: $("#micStage"),
   micBtn: $("#micBtn"),
   micLabel: $("#micLabel"),
+  micHint: $("#micHint"),
+  pulseChart: $("#pulseChart"),
+  pulsePeak: $("#pulsePeak"),
+  pulseTop: $("#pulseTop"),
+  pulseBest: $("#pulseBest"),
+  pulseBadge: $("#pulseBadge"),
+  pulseTag: $("#pulseTag"),
   saleInput: $("#saleInput"),
   preview: $("#preview"),
   banner: $("#banner"),
@@ -623,6 +663,39 @@ const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const speechOk = Boolean(Recognition);
 let recognition = null;
 let listening = false;
+let interimText = "";
+let finalHandled = false;
+let micBlocked = false;
+
+function setMicBlocked(blocked) {
+  micBlocked = blocked;
+  el.micStage.classList.toggle("is-blocked", blocked);
+  if (el.micHint) el.micHint.hidden = !blocked;
+  if (blocked) {
+    if (el.micHint) el.micHint.textContent = t("micBlockedHint");
+    el.micLabel.textContent = t("micBlocked");
+  } else if (!listening) {
+    el.micLabel.textContent = t("micIdle");
+  }
+}
+
+/* The microphone has to be opened once through getUserMedia: this is what
+   actually triggers the browser prompt, and it tells us when the site is
+   blocked so the user gets instructions instead of silence. */
+async function ensureMicPermission() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return true;
+  try {
+    if (navigator.permissions && navigator.permissions.query) {
+      const status = await navigator.permissions.query({ name: "microphone" });
+      if (status.state === "denied") return false;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 function buildRecognition() {
   if (!Recognition) return null;
@@ -630,10 +703,12 @@ function buildRecognition() {
   rec.lang = LANGS[state.settings.lang].speech;
   rec.interimResults = true;
   rec.continuous = false;
-  rec.maxAlternatives = 1;
+  rec.maxAlternatives = 3;
 
   rec.onstart = () => {
     listening = true;
+    interimText = "";
+    finalHandled = false;
     el.micStage.classList.add("is-recording");
     el.micBtn.setAttribute("aria-pressed", "true");
     el.micLabel.textContent = t("micListening");
@@ -647,14 +722,24 @@ function buildRecognition() {
       if (result.isFinal) final += result[0].transcript;
       else interim += result[0].transcript;
     }
-    if (interim) el.micLabel.textContent = interim.trim();
-    if (final.trim()) handleTranscript(final.trim());
+    if (interim.trim()) {
+      interimText = interim.trim();
+      el.micLabel.textContent = interimText;
+    }
+    if (final.trim()) {
+      finalHandled = true;
+      interimText = "";
+      handleTranscript(final.trim());
+    }
   };
 
   rec.onerror = (event) => {
     listening = false;
     el.micStage.classList.remove("is-recording", "is-processing");
     el.micBtn.setAttribute("aria-pressed", "false");
+    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      setMicBlocked(true);
+    }
     const map = {
       "not-allowed": ["errPerm", "errPermSub"],
       "service-not-allowed": ["errPerm", "errPermSub"],
@@ -664,17 +749,24 @@ function buildRecognition() {
     };
     const [title, sub] = map[event.error] || ["errVoice", "errVoiceSub"];
     showBanner("error", t(title), t(sub));
-    el.micLabel.textContent = t("micIdle");
+    if (!micBlocked) el.micLabel.textContent = t("micIdle");
   };
 
   rec.onend = () => {
     listening = false;
     el.micStage.classList.remove("is-recording");
     el.micBtn.setAttribute("aria-pressed", "false");
+    /* Chrome sometimes ends with only interim text and never marks a final
+       result — without this the shopkeeper's words were silently dropped. */
+    if (!finalHandled && interimText.trim()) {
+      const buffered = interimText.trim();
+      interimText = "";
+      handleTranscript(buffered);
+    }
     if (el.micStage.classList.contains("is-processing")) {
       setTimeout(() => {
         el.micStage.classList.remove("is-processing");
-        el.micLabel.textContent = t("micIdle");
+        if (!micBlocked) el.micLabel.textContent = t("micIdle");
       }, 900);
     }
   };
@@ -682,7 +774,7 @@ function buildRecognition() {
   return rec;
 }
 
-function startListening() {
+async function startListening() {
   if (!speechOk) {
     showBanner("error", t("errSupport"), t("errSupportSub"));
     switchMode("manual");
@@ -692,9 +784,16 @@ function startListening() {
     recognition && recognition.stop();
     return;
   }
+  hideBanner();
+  const allowed = await ensureMicPermission();
+  if (!allowed) {
+    setMicBlocked(true);
+    showBanner("error", t("errPerm"), t("errPermSub"));
+    return;
+  }
+  setMicBlocked(false);
   if (!recognition) recognition = buildRecognition();
   recognition.lang = LANGS[state.settings.lang].speech;
-  hideBanner();
   try {
     recognition.start();
   } catch {
@@ -703,16 +802,27 @@ function startListening() {
 }
 
 function handleTranscript(text) {
-  el.micStage.classList.add("is-processing");
-  el.micLabel.textContent = t("micProcessing");
-  const parsed = parseSale(text);
-  if (!parsed.ok) {
-    showBanner("error", t("errParse"), `“${text}” — ${t("errParseSub")}`);
-    el.micLabel.textContent = t("micIdle");
+  const phrase = String(text || "").trim();
+  if (!phrase) {
+    showBanner("error", t("errNoSpeech"), t("errNoSpeechSub"));
     return;
   }
-  recordSale(parsed.sale, "voice", text);
-  el.micLabel.textContent = t("micIdle");
+  el.micStage.classList.add("is-processing");
+  el.micLabel.textContent = t("micProcessing");
+  const parsed = parseSale(phrase);
+  if (!parsed.ok) {
+    /* Keep the recognised words and let the shopkeeper finish them by hand. */
+    switchMode("manual");
+    el.saleInput.value = phrase;
+    renderPreview();
+    el.saleInput.focus();
+    el.saleInput.setSelectionRange(phrase.length, phrase.length);
+    showBanner("error", t("errParse"), `“${phrase}” — ${t("errParseHint")}`);
+    if (!micBlocked) el.micLabel.textContent = t("micIdle");
+    return;
+  }
+  recordSale(parsed.sale, "voice", phrase);
+  if (!micBlocked) el.micLabel.textContent = t("micIdle");
 }
 
 function speakTotal(sale, total) {
@@ -981,10 +1091,54 @@ function renderProfile() {
   document.title = `${shop} · VoiceKhata`;
 }
 
+function renderPulse() {
+  if (!el.pulseChart) return;
+  const rows = todaySales();
+  const hours = rows.map((sale) => new Date(sale.ts).getHours());
+  const first = Math.min(8, ...(hours.length ? hours : [8]));
+  const last = Math.max(22, ...(hours.length ? hours : [22]));
+  const buckets = [];
+  for (let hour = first; hour <= last; hour += 1) {
+    buckets.push({ hour, amount: 0, count: 0 });
+  }
+  rows.forEach((sale) => {
+    const hour = new Date(sale.ts).getHours();
+    const bucket = buckets.find((b) => b.hour === hour);
+    if (bucket) {
+      bucket.amount += sale.amount;
+      bucket.count += 1;
+    }
+  });
+  const max = Math.max(1, ...buckets.map((b) => b.amount));
+
+  el.pulseChart.innerHTML = buckets
+    .map((b) => {
+      const height = Math.max(b.amount ? 8 : 3, Math.round((b.amount / max) * 100));
+      return `<span class="pulse__bar${b.amount ? " is-live" : ""}" title="${String(b.hour).padStart(2, "0")}:00 · ${money(b.amount)}"><i style="--h:${height}%"></i><b>${b.hour}</b></span>`;
+    })
+    .join("");
+
+  const total = rows.reduce((sum, sale) => sum + sale.amount, 0);
+  const peak = buckets.reduce((best, b) => (b.amount > best.amount ? b : best), buckets[0]);
+  const topItem = Object.entries(
+    rows.reduce((acc, sale) => {
+      acc[sale.item] = (acc[sale.item] || 0) + sale.amount;
+      return acc;
+    }, {})
+  ).sort((a, b) => b[1] - a[1])[0];
+  const bestBill = rows.reduce((best, sale) => (sale.amount > best ? sale.amount : best), 0);
+
+  el.pulsePeak.textContent = total ? `${String(peak.hour).padStart(2, "0")}:00 · ${money(peak.amount)}` : t("pulseNone");
+  el.pulseTop.textContent = topItem ? `${itemName(itemByKey(topItem[0]))} · ${money(topItem[1])}` : t("pulseNone");
+  el.pulseBest.textContent = bestBill ? money(bestBill) : t("pulseNone");
+  if (el.pulseBadge) el.pulseBadge.textContent = `${rows.length} ${t("pulseBadge")}`;
+}
+
 function render() {
   renderSummary();
   renderRows();
   renderProfile();
+  renderPulse();
 }
 
 /* ---------------------------- theme & language ---------------------------- */
@@ -1031,8 +1185,9 @@ function applyLanguage(lang, notify = false) {
     el.engineText.textContent = t("engineReady");
     el.engineChip.classList.remove("is-warn");
     if (!el.micStage.classList.contains("is-recording") && !el.micStage.classList.contains("is-processing")) {
-      el.micLabel.textContent = t("micIdle");
+      el.micLabel.textContent = micBlocked ? t("micBlocked") : t("micIdle");
     }
+    if (micBlocked && el.micHint) el.micHint.textContent = t("micBlockedHint");
   }
 
   if (recognition) recognition.lang = copy.speech;
@@ -1121,6 +1276,7 @@ function updateClock() {
   el.clock.textContent = now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
   el.todayLabel.textContent = now.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
   el.todayTag.textContent = now.toLocaleDateString(locale, { day: "numeric", month: "short" });
+  if (el.pulseTag) el.pulseTag.textContent = el.todayTag.textContent;
 }
 
 function init() {
@@ -1143,6 +1299,12 @@ function init() {
   } else {
     el.micBtn.addEventListener("click", startListening);
     $("#inlineMic").addEventListener("click", startListening);
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions
+        .query({ name: "microphone" })
+        .then((status) => { if (status.state === "denied") setMicBlocked(true); })
+        .catch(() => {});
+    }
   }
 
   el.tabVoice.addEventListener("click", () => switchMode("voice"));
@@ -1280,4 +1442,4 @@ function init() {
 init();
 
 /* Exposed for manual verification in the browser console. */
-window.VoiceKhata = { parseSale, state, render, applyLanguage, applyTheme };
+window.VoiceKhata = { parseSale, handleTranscript, state, render, applyLanguage, applyTheme };

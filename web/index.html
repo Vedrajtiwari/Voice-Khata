@@ -111,6 +111,7 @@
               <svg class="ic mic-btn__icon"><use href="#i-mic"/></svg>
             </button>
             <p class="mic-label" id="micLabel" aria-live="polite" data-i18n="micIdle">Tap to speak · Mic dabayein</p>
+            <p class="mic-hint" id="micHint" hidden></p>
             <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           </div>
         </div>
@@ -210,6 +211,37 @@
           </button>
           <span class="autosave"><span class="dot dot--live" aria-hidden="true"></span> <span data-i18n="autosave">Auto-saved on this device</span></span>
         </footer>
+      </section>
+
+      <section class="card pulse reveal" style="--i:3" aria-labelledby="pulseTitle">
+        <header class="card__head">
+          <div>
+            <h2 class="card__title" id="pulseTitle">
+              <span data-i18n="pulseTitle">Day pulse</span>
+              <span class="tag tag--today" id="pulseTag">आज</span>
+            </h2>
+            <p class="card__sub" data-i18n="pulseSub">Today's sales at a glance</p>
+          </div>
+          <span class="pulse__badge" id="pulseBadge"></span>
+        </header>
+
+        <div class="pulse__chart" id="pulseChart" aria-hidden="true"></div>
+        <p class="pulse__caption" data-i18n="pulseHint">Sales by hour</p>
+
+        <div class="pulse__facts">
+          <div class="pulse__fact">
+            <span data-i18n="pulsePeak">Peak hour</span>
+            <b id="pulsePeak">—</b>
+          </div>
+          <div class="pulse__fact">
+            <span data-i18n="pulseTop">Top seller</span>
+            <b id="pulseTop">—</b>
+          </div>
+          <div class="pulse__fact">
+            <span data-i18n="pulseBestBill">Biggest bill</span>
+            <b id="pulseBest">—</b>
+          </div>
+        </div>
       </section>
     </div>
 
