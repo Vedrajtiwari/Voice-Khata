@@ -1,0 +1,21 @@
+{
+  "name": "VoiceKhata — voice sales ledger",
+  "short_name": "VoiceKhata",
+  "description": "Bolo, bikri darj karo. A voice-first sales ledger for Indian kirana shops.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#F7F8FC",
+  "theme_color": "#16735B",
+  "lang": "hi",
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Record a sale", "url": "./?mode=voice" },
+    { "name": "Type a sale", "url": "./?mode=manual" }
+  ]
+}

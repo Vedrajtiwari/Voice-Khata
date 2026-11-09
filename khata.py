@@ -14,7 +14,18 @@ ITEMS = {
     "milk": "milk", "cheeni": "sugar", "sugar": "sugar", "namak": "salt",
     "tel": "oil", "oil": "oil", "dal": "lentils", "chai": "tea",
     "tea": "tea", "biscuit": "biscuit", "haldi": "turmeric", "sabun": "soap",
-    "soap": "soap",
+    "soap": "soap", "चावल": "rice", "आटा": "wheat flour",
+    "दूध": "milk", "चीनी": "sugar", "नमक": "salt", "तेल": "oil", "दाल": "lentils",
+    "चाय": "tea", "बिस्कुट": "biscuit", "हल्दी": "turmeric", "साबुन": "soap",
+    "तांदूळ": "rice", "पीठ": "wheat flour", "साखर": "sugar",
+    "मीठ": "salt", "डाळ": "lentils", "चहा": "tea", "बिस्कीट": "biscuit",
+}
+
+ITEM_LABELS = {
+    "rice": "Rice / चावल / तांदूळ", "wheat flour": "Atta / आटा / पीठ", "milk": "Milk / दूध",
+    "sugar": "Sugar / चीनी / साखर", "salt": "Salt / नमक / मीठ", "oil": "Oil / तेल",
+    "lentils": "Dal / दाल / डाळ", "tea": "Tea / चाय / चहा", "biscuit": "Biscuit / बिस्कुट",
+    "turmeric": "Haldi / हल्दी", "soap": "Soap / साबुन",
 }
 
 NUMBER_WORDS = {
@@ -22,6 +33,9 @@ NUMBER_WORDS = {
     "chhe": 6, "chhah": 6, "saat": 7, "aath": 8, "nau": 9, "das": 10,
     "bees": 20, "tees": 30, "chalis": 40, "pachas": 50, "saath": 60,
     "sattar": 70, "assi": 80, "nabbe": 90, "sau": 100,
+    "एक": 1, "दो": 2, "तीन": 3, "चार": 4, "पांच": 5, "छह": 6,
+    "सात": 7, "आठ": 8, "नौ": 9, "दस": 10, "पचास": 50,
+    "दोन": 2, "पाच": 5, "सहा": 6, "नऊ": 9, "दहा": 10, "पन्नास": 50,
 }
 
 # Hindi digits to ASCII digits, so Devanagari transcripts also work
@@ -31,10 +45,15 @@ CSV_FIELDS = ["date", "time", "item", "qty", "amount"]
 
 
 def _numbers(text):
-    """Extract numeric values from ASCII, Devanagari, or Hindi-word text."""
+    """Extract numeric values from ASCII, Devanagari, or Hindi-word text.
+
+    Real speech transcripts arrive with currency symbols and thousands
+    separators ("₹50", "₹1,200"), so those are normalised before parsing.
+    """
     nums = []
-    text = text.translate(DEVANAGARI)
-    for tok in re.findall(r"[a-z]+|\d+", text.lower()):
+    text = text.translate(DEVANAGARI).replace("₹", " ").replace("$", " ").replace(",", "")
+    for tok in re.findall(r"\S+", text.lower(), flags=re.UNICODE):
+        tok = tok.strip(".,!?;:()[]{}\"'")
         if tok.isdigit():
             nums.append(int(tok))
         elif tok in NUMBER_WORDS:
@@ -51,7 +70,7 @@ def parse_entry(text, now=None):
     now = now or datetime.now()
     t = text.lower().translate(DEVANAGARI)
     item = next((en for phrase, en in ITEMS.items()
-                 if re.search(rf"\b{re.escape(phrase)}\b", t)), None)
+                 if re.search(rf"(?<![A-Za-z]){re.escape(phrase)}(?![A-Za-z])", t)), None)
     nums = _numbers(t)
     if item is None or len(nums) < 2:
         return None

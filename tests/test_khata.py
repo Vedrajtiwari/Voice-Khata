@@ -48,6 +48,23 @@ def test_new_item_can_be_added_to_dictionary():
     assert e["item"] == "turmeric"
 
 
+def test_hindi_and_marathi_item_words():
+    assert parse_entry("2 किलो चावल 50 रुपये", now=NOW)["item"] == "rice"
+    assert parse_entry("दोन किलो तांदूळ पन्नास रुपये", now=NOW)["amount"] == 50
+
+
+def test_currency_symbol_from_real_transcript():
+    # Prisma returns transcripts like: "2 किलो चावल ₹50 सेव हो गया।"
+    e = parse_entry("2 किलो चावल ₹50 सेव हो गया।", now=NOW)
+    assert e is not None
+    assert e["item"] == "rice" and e["qty"] == 2 and e["amount"] == 50
+
+
+def test_rupee_symbol_and_thousands_separator():
+    e = parse_entry("1 atta ₹1,200", now=NOW)
+    assert e["qty"] == 1 and e["amount"] == 1200
+
+
 def test_undo_empty_ledger_returns_none(tmp_path):
     assert undo_last(str(tmp_path / "missing.csv")) is None
 

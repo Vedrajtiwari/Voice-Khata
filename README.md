@@ -1,79 +1,119 @@
-# VoiceKhata
+# VoiceKhata · खाता, अब आवाज़ से
 
-VoiceKhata is a small, friendly sales ledger for Indian kirana shops. A shop
-owner can speak a sale in Hindi/Hinglish or type it, see the running total, and
-undo the most recent entry when needed.
+A voice-first sales ledger for Indian kirana shops. Say or type one sale —
+`2 kilo chawal 50 rupay` — and it is parsed, saved, totalled and readable back
+to you in Hindi, English or Marathi.
 
-## Why it is useful
+The repository ships two artefacts that share one idea:
 
-Paper ledgers are slow to update while serving customers. VoiceKhata turns a
-short phrase such as `2 kilo chawal 50 rupay` into a dated ledger entry and can
-read the confirmation back using Gnani voice services.
+| Artefact | Purpose | Tech | Deploy target |
+| --- | --- | --- | --- |
+| `web/` | The premium counter app and installable PWA (the website) | Plain HTML/CSS/JS, no build step, no CDN | GitHub Pages |
+| `app.py` + modules | The Python app that calls the Gnani STT/TTS APIs | Streamlit + SQLite | Streamlit Community Cloud |
 
-## Features
+`web/` needs **no API key** — it uses the browser's own speech recognition and
+stores the ledger locally, so the public site works for anyone who opens it.
+The Python app is the one wired to Gnani and is the piece to show for the
+Gnani internship submission.
 
-- Voice input through Streamlit's microphone widget.
-- Typed Hindi, Hinglish, English, and Devanagari digit input.
-- Tested parsing for common kirana items and Hindi number words.
-- Daily entry table, running total, CSV export, and one-tap undo.
-- Voice-confirmation and quick-tip toggles in the sidebar.
-- Graceful fallback to typed mode when the Gnani key or TTS service is unavailable.
+## The web app (`web/`)
 
-## Architecture
+- **Voice or manual entry** with a segmented control, live parse preview before saving.
+- **Trilingual parser** — Hindi, Hinglish, English, Marathi, Devanagari digits (`५०`), `₹`, and thousands separators (`₹1,200`).
+- **Today's ledger** with totals, average bill, voice/manual filters, search, expandable receipt details.
+- **Undo last entry**, today's CSV export, and a full backup export in Settings.
+- **Real light/dark themes**, an animated switch pair, and language selection that also changes the speech-recognition language.
+- **Installable PWA** with an offline shell (`manifest.webmanifest` + `sw.js`).
+- Motion: staggered card reveals, pulsing mic ring, waveform while recording, animated counters, sliding segmented thumb, toast confirmations — all disabled under `prefers-reduced-motion`.
 
-`audio -> Gnani Prisma STT -> parser -> sales.csv -> daily total -> optional Gnani Timbre TTS`
+### Run the web app locally
 
-The parser and CSV layer are isolated in `khata.py`, which keeps the core
-behavior testable without a browser or API key. `app.py` contains the Streamlit
-UI and `gnani_client.py` contains the external API calls.
-
-## Run locally
-
-Use Python 3.10+ in a virtual environment:
-
-```bash
-pip install -r requirements.txt
+```powershell
+cd D:\voice-khata
+python -m http.server 8765 --directory web
 ```
 
-For voice input, copy `.streamlit/secrets.toml.example` to
-`.streamlit/secrets.toml` and add your Gnani key. Never commit that file.
+Open <http://localhost:8765>. Voice input needs Chrome or Edge; every other
+feature works in any modern browser.
 
-Run the tests before opening the app:
+## The Python app (Gnani API)
 
-```bash
+```powershell
+cd D:\voice-khata
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 pytest -q
 streamlit run app.py
 ```
 
-Open `http://localhost:8501`. Typed entries work without an API key; the Bolo
-tab needs `GNANI_API_KEY`. Browsers generally require HTTPS for microphone
-access, so test real voice input again on the deployed Streamlit URL.
+Voice features need a key in `.streamlit/secrets.toml` (git-ignored):
 
-## Test coverage
+```toml
+GNANI_API_KEY = "your-key"
+```
 
-The test suite covers ASCII and Devanagari digits, Hindi number words, item
-aliases, invalid phrases such as `chawal lao`, zero rejection, daily totals,
-CSV persistence, and undo behavior.
+Verify both API directions with one command — it speaks a Hindi sentence with
+Timbre TTS, feeds that audio back into Prisma STT, and prints the transcript:
 
-## Deploy on Streamlit Community Cloud
+```powershell
+python check_api.py
+```
 
-1. Create a public GitHub repository named `voice-khata`.
-2. Push this folder to the `main` branch.
-3. In Streamlit Community Cloud, choose **Create app**, select the repository,
-   branch `main`, and set the main file to `app.py`.
-4. Under **Advanced settings → Secrets**, add:
+Or test your own recording:
 
-   ```toml
-   GNANI_API_KEY = "your-key"
-   ```
+```powershell
+python check_api.py path\to\recording.wav
+```
 
-5. Deploy and copy the generated HTTPS URL into your internship submission.
+### Files
 
-The app uses a local CSV for this MVP. Free hosted instances can reset local
-files when they restart, so a future production version should use a database
-or managed storage.
+| File | Responsibility |
+| --- | --- |
+| `web/index.html` | App shell, accessibility landmarks, icon sprite |
+| `web/styles.css` | Design tokens (light/dark), layout, motion |
+| `web/app.js` | Parser, storage, rendering, speech, interactions |
+| `web/sw.js` | Offline cache for the installed app |
+| `app.py` | Streamlit UI for the Gnani-backed app |
+| `database.py` | SQLite schema and sales/customer queries |
+| `khata.py` | Multilingual parsing shared by the Python app |
+| `gnani_client.py` | Gnani STT/TTS client |
+| `ui_text.py` | Hindi/English/Marathi interface copy |
+
+## Deploy the website (GitHub Pages)
+
+1. Create an **empty public** repository named `voice-khata` on GitHub (no README, no `.gitignore`, no licence).
+2. Push this folder:
+
+```powershell
+cd D:\voice-khata
+git remote add origin https://github.com/YOUR-USERNAME/voice-khata.git
+git push -u origin main
+```
+
+3. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+4. The workflow in `.github/workflows/pages.yml` publishes `web/` on every push to `main`.
+
+Your site: `https://YOUR-USERNAME.github.io/voice-khata/`
+
+On Android, open that URL in Chrome and choose **Add to Home screen** — it then
+runs full-screen from the home screen with offline support.
+
+## Deploy the Python app (Streamlit Community Cloud)
+
+1. Sign in at <https://share.streamlit.io> with GitHub.
+2. **Create app** → repository `YOUR-USERNAME/voice-khata`, branch `main`, main file `app.py`.
+3. **Advanced settings → Secrets**: add `GNANI_API_KEY = "your-key"`.
+4. Deploy, then test voice on the generated HTTPS link (microphone needs HTTPS).
+
+### Persistence note
+
+The web app keeps entries in the browser's `localStorage`; the Python app keeps
+them in `voicekhata.db`. Neither survives a wiped device or a Streamlit Cloud
+restart, so export a CSV before clearing or redeploying. Point
+`VOICEKHATA_DB_PATH` at a mounted volume for durable Python-side storage.
 
 ## Privacy
 
-Use synthetic or self-recorded examples while evaluating the project. Do not
-store real customer personal data in this demo ledger.
+Use only synthetic or self-recorded entries for demos and screenshots. Never
+commit `.streamlit/secrets.toml`, `voicekhata.db`, or exported CSVs.

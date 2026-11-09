@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="VoiceKhata">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1E8A6E"/>
+      <stop offset="1" stop-color="#0F5C47"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="url(#g)"/>
+  <g fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="26" y="14" width="12" height="20" rx="6" fill="#fff" stroke="none"/>
+    <path d="M20 30a12 12 0 0 0 24 0"/>
+    <path d="M32 42v6"/>
+    <path d="M24 51h16"/>
+  </g>
+  <g fill="none" stroke="#A1F5D7" stroke-width="2.2" stroke-linecap="round" opacity=".9">
+    <path d="M12 26v12M17 21v22M47 21v22M52 26v12"/>
+  </g>
+</svg>

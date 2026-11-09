@@ -1,5 +1,9 @@
 .streamlit/secrets.toml
 sales.csv
+voicekhata.db
+*.db-journal
+*.db-wal
+*.db-shm
 __pycache__/
 .pytest_cache/
 .venv/

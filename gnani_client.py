@@ -39,9 +39,9 @@ def _check(resp):
     resp.raise_for_status()
 
 
-def transcribe(audio_bytes):
+def transcribe(audio_bytes, language_code=LANGUAGE):
     """Prisma speech-to-text. Returns the transcript string."""
-    payload = {"language_code": LANGUAGE}
+    payload = {"language_code": language_code}
     if STT_MODEL:
         payload["model"] = STT_MODEL
     resp = requests.post(
@@ -56,7 +56,7 @@ def transcribe(audio_bytes):
     return body.get("text") or body.get("transcript") or ""
 
 
-def speak(text):
+def speak(text, language_code=LANGUAGE):
     """Timbre text-to-speech. Returns audio bytes, or None if TTS fails."""
     try:
         resp = requests.post(
@@ -66,7 +66,7 @@ def speak(text):
                 "text": text,
                 "voice": TTS_VOICE,
                 "model": TTS_MODEL,
-                "language": LANGUAGE,
+                "language": language_code,
                 "audio_config": {
                     "encoding": "linear_pcm",
                     "container": "wav",
