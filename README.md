@@ -8,7 +8,7 @@ The repository ships two artefacts that share one idea:
 
 | Artefact | Purpose | Tech | Deploy target |
 | --- | --- | --- | --- |
-| `web/` | The premium counter app and installable PWA (the website) | Plain HTML/CSS/JS, no build step, no CDN | GitHub Pages |
+| `web/` | The premium counter app, its installable PWA shell and the `web/site/` landing page | Plain HTML/CSS/JS, no build step, no CDN | GitHub Pages |
 | `app.py` + modules | The Python app that calls the Gnani STT/TTS APIs | Streamlit + SQLite | Streamlit Community Cloud |
 
 `web/` needs **no API key** — it uses the browser's own speech recognition and
@@ -20,9 +20,11 @@ Gnani internship submission.
 
 - **Voice or manual entry** with a segmented control, live parse preview before saving.
 - **Trilingual parser** — Hindi, Hinglish, English, Marathi, Devanagari digits (`५०`), `₹`, and thousands separators (`₹1,200`).
-- **Today's ledger** with totals, average bill, voice/manual filters, search, expandable receipt details.
-- **Undo last entry**, today's CSV export, and a full backup export in Settings.
-- **Real light/dark themes**, an animated switch pair, and language selection that also changes the speech-recognition language.
+- **Today's Record** card with totals, average bill, voice/manual filters, search, expandable receipt details, and its own **Export CSV** button.
+- **Undo last entry**, export-all backup and clear-all in the sidebar, with a saved **Profile** (owner, shop, phone, city).
+- **Trilingual interface** — every button, label, table heading and item name switches between हिंदी, English and मराठी. Only the `VoiceKhata` wordmark stays fixed.
+- **Pure-black dark mode** (`#000` background, white text) and a light cream theme, plus language selection that also changes the speech-recognition language.
+- **Landing page** at `web/site/` — bilingual hero, phone mockup, feature grid, how-it-works and language samples, linked from the app footer.
 - **Installable PWA** with an offline shell (`manifest.webmanifest` + `sw.js`).
 - Motion: staggered card reveals, pulsing mic ring, waveform while recording, animated counters, sliding segmented thumb, toast confirmations — all disabled under `prefers-reduced-motion`.
 
@@ -72,8 +74,9 @@ python check_api.py path\to\recording.wav
 | --- | --- |
 | `web/index.html` | App shell, accessibility landmarks, icon sprite |
 | `web/styles.css` | Design tokens (light/dark), layout, motion |
-| `web/app.js` | Parser, storage, rendering, speech, interactions |
-| `web/sw.js` | Offline cache for the installed app |
+| `web/app.js` | Parser, storage, i18n dictionary, rendering, speech, interactions |
+| `web/sw.js` | Offline cache for the installed app (network-first, so deploys update) |
+| `web/site/index.html`, `web/site/site.css` | The marketing site, served at `/site/` |
 | `app.py` | Streamlit UI for the Gnani-backed app |
 | `database.py` | SQLite schema and sales/customer queries |
 | `khata.py` | Multilingual parsing shared by the Python app |
@@ -94,7 +97,8 @@ git push -u origin main
 3. In the repository: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 4. The workflow in `.github/workflows/pages.yml` publishes `web/` on every push to `main`.
 
-Your site: `https://YOUR-USERNAME.github.io/voice-khata/`
+Your app: `https://YOUR-USERNAME.github.io/voice-khata/`
+Landing page: `https://YOUR-USERNAME.github.io/voice-khata/site/`
 
 On Android, open that URL in Chrome and choose **Add to Home screen** — it then
 runs full-screen from the home screen with offline support.

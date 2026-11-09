@@ -1,6 +1,6 @@
 /* VoiceKhata service worker — offline shell for the counter app. */
 
-const CACHE = "voicekhata-v1";
+const CACHE = "voicekhata-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -23,6 +23,8 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+/* Network-first so a new deploy is picked up on the next load; the cache only
+   answers when the network is unavailable. */
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET" || new URL(request.url).origin !== self.location.origin) return;
@@ -41,13 +43,14 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((hit) =>
-      hit ||
-      fetch(request).then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(request, copy));
+    fetch(request)
+      .then((response) => {
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+        }
         return response;
       })
-    )
+      .catch(() => caches.match(request))
   );
 });
