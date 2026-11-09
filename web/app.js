@@ -73,6 +73,24 @@ const I18N = {
     pulseBadge: "बिल",
     pulseNone: "अभी डेटा नहीं",
     errParseHint: "सामान, मात्रा और रकम जोड़कर सेव करें",
+    menu: "मेन्यू",
+    close: "बंद करें",
+    account: "अकाउंट",
+    accountSignIn: "साइन इन करके दुकान सेव करें",
+    accountSignedIn: "साइन इन",
+    signOut: "साइन आउट",
+    signedOut: "साइन आउट हो गया",
+    quickSettings: "झटपट सेटिंग्स",
+    micCheck: "माइक जाँचें",
+    micWorking: "माइक चालू है — अब बोलें",
+    micCheckFail: "माइक शुरू नहीं हुआ",
+    studioHeard: "सुना गया",
+    studioRetry: "फिर बोलें",
+    studioHint: "नीचे लिखा सुधार सकते हैं, फिर सेव करें",
+    saveHeard: "सेव करें",
+    catPrev: "पिछला सामान",
+    catNext: "अगला सामान",
+    guest: "मेहमान",
     saleLabel: "बिक्री की जानकारी",
     salePlaceholder: "2 किलो चावल 50 रुपये",
     saleHelp: "उदाहरण: 2 किलो चावल 50 रुपये · १ आटा ४० · देवनागरी अंक भी चलेंगे",
@@ -211,6 +229,24 @@ const I18N = {
     pulseBadge: "bills",
     pulseNone: "No data yet",
     errParseHint: "Add the item, quantity or amount, then save",
+    menu: "Menu",
+    close: "Close",
+    account: "Account",
+    accountSignIn: "Sign in to save your shop",
+    accountSignedIn: "Signed in",
+    signOut: "Sign out",
+    signedOut: "Signed out",
+    quickSettings: "Quick settings",
+    micCheck: "Check mic",
+    micWorking: "Mic works — speak now",
+    micCheckFail: "Couldn't start the mic",
+    studioHeard: "Heard",
+    studioRetry: "Speak again",
+    studioHint: "Edit the text below, then save",
+    saveHeard: "Save",
+    catPrev: "Previous items",
+    catNext: "Next items",
+    guest: "Guest",
     saleLabel: "Sale details",
     salePlaceholder: "2 kilo chawal 50 rupay",
     saleHelp: "Example: 2 kilo chawal 50 rupay · १ atta ४० · Devanagari digits work",
@@ -349,6 +385,24 @@ const I18N = {
     pulseBadge: "बिले",
     pulseNone: "अजून डेटा नाही",
     errParseHint: "वस्तू, प्रमाण किंवा रक्कम जोडून जतन करा",
+    menu: "मेनू",
+    close: "बंद करा",
+    account: "खाते",
+    accountSignIn: "साइन इन करून दुकान जतन करा",
+    accountSignedIn: "साइन इन",
+    signOut: "साइन आउट",
+    signedOut: "साइन आउट झाले",
+    quickSettings: "झटपट सेटिंग्ज",
+    micCheck: "माइक तपासा",
+    micWorking: "मायक्रोफोन चालू आहे — आता बोला",
+    micCheckFail: "मायक्रोफोन सुरू झाला नाही",
+    studioHeard: "ऐकले",
+    studioRetry: "पुन्हा बोला",
+    studioHint: "खालील मजकूर दुरुस्त करा, मग जतन करा",
+    saveHeard: "जतन करा",
+    catPrev: "मागील वस्तू",
+    catNext: "पुढील वस्तू",
+    guest: "पाहुणे",
     saleLabel: "विक्रीचा तपशील",
     salePlaceholder: "2 किलो तांदूळ 50 रुपये",
     saleHelp: "उदाहरण: 2 किलो तांदूळ 50 रुपये · १ पीठ ४० · देवनागरी अंक चालतात",
@@ -583,6 +637,13 @@ function persist() {
 }
 
 const state = load();
+const ACCOUNT_KEY = "voicekhata.account";
+
+function loadAccount() {
+  try { return JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "null"); } catch { return null; }
+}
+
+state.account = loadAccount();
 
 /* ---------------------------- dom ---------------------------- */
 
@@ -603,6 +664,31 @@ const el = {
   pulseBest: $("#pulseBest"),
   pulseBadge: $("#pulseBadge"),
   pulseTag: $("#pulseTag"),
+  menuBtn: $("#menuBtn"),
+  drawer: $("#drawer"),
+  drawerScrim: $("#drawerScrim"),
+  drawerClose: $("#drawerClose"),
+  drawerTheme: $("#drawerTheme"),
+  drawerLang: $("#drawerLang"),
+  drawerName: $("#drawerName"),
+  drawerMeta: $("#drawerMeta"),
+  drawerAvatar: $("#drawerAvatar"),
+  drawerSettingsBtn: $("#drawerSettingsBtn"),
+  drawerHelpBtn: $("#drawerHelpBtn"),
+  drawerExportBtn: $("#drawerExportBtn"),
+  drawerSignOut: $("#drawerSignOut"),
+  micCheck: $("#micCheck"),
+  micLevel: $("#micLevel"),
+  studio: $("#studio"),
+  studioText: $("#studioText"),
+  studioPreview: $("#studioPreview"),
+  studioSave: $("#studioSave"),
+  studioCancel: $("#studioCancel"),
+  studioRetry: $("#studioRetry"),
+  catalogPrev: $("#catalogPrev"),
+  catalogNext: $("#catalogNext"),
+  accountLink: $("#accountLink"),
+  accountState: $("#accountState"),
   saleInput: $("#saleInput"),
   preview: $("#preview"),
   banner: $("#banner"),
@@ -807,21 +893,8 @@ function handleTranscript(text) {
     showBanner("error", t("errNoSpeech"), t("errNoSpeechSub"));
     return;
   }
-  el.micStage.classList.add("is-processing");
-  el.micLabel.textContent = t("micProcessing");
-  const parsed = parseSale(phrase);
-  if (!parsed.ok) {
-    /* Keep the recognised words and let the shopkeeper finish them by hand. */
-    switchMode("manual");
-    el.saleInput.value = phrase;
-    renderPreview();
-    el.saleInput.focus();
-    el.saleInput.setSelectionRange(phrase.length, phrase.length);
-    showBanner("error", t("errParse"), `“${phrase}” — ${t("errParseHint")}`);
-    if (!micBlocked) el.micLabel.textContent = t("micIdle");
-    return;
-  }
-  recordSale(parsed.sale, "voice", phrase);
+  hideBanner();
+  openStudio(phrase);
   if (!micBlocked) el.micLabel.textContent = t("micIdle");
 }
 
@@ -1060,6 +1133,8 @@ function renderCatalog() {
       renderPreview();
     });
   });
+
+  updateCatalogSlider();
 }
 
 function renderPreview() {
@@ -1079,13 +1154,14 @@ function renderPreview() {
 
 function renderProfile() {
   const profile = state.profile;
-  const name = profile.name || t("profileEmpty");
-  const shop = profile.shop || t("defaultShop");
+  const account = state.account;
+  const name = profile.name || (account && account.name) || t("profileEmpty");
+  const shop = profile.shop || (account && account.shop) || t("defaultShop");
   el.profileName.textContent = name;
   el.profileMeta.textContent = shop;
-  el.profilePhone.textContent = profile.phone || "—";
+  el.profilePhone.textContent = profile.phone || (account && account.phone ? `+91 ${account.phone}` : "") || "—";
   el.profileCity.textContent = profile.city || "—";
-  el.profileAvatar.textContent = (profile.shop || profile.name || "VK")
+  el.profileAvatar.textContent = (shop || name || "VK")
     .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "VK";
   el.shopTitle.textContent = shop;
   document.title = `${shop} · VoiceKhata`;
@@ -1139,6 +1215,7 @@ function render() {
   renderRows();
   renderProfile();
   renderPulse();
+  renderAccount();
 }
 
 /* ---------------------------- theme & language ---------------------------- */
@@ -1147,6 +1224,7 @@ function applyTheme(theme, animate = true) {
   state.settings.theme = theme;
   el.html.dataset.theme = theme;
   el.themeSwitch.setAttribute("aria-checked", String(theme === "dark"));
+  if (el.drawerTheme) el.drawerTheme.setAttribute("aria-checked", String(theme === "dark"));
   document.querySelector('meta[name="theme-color"]').setAttribute("content", theme === "dark" ? "#000000" : "#16735B");
   if (animate) {
     el.html.classList.add("theme-fade");
@@ -1173,7 +1251,7 @@ function applyLanguage(lang, notify = false) {
   el.html.lang = lang;
   el.langChip.textContent = copy.label;
 
-  $$("#langChoice button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === lang)));
+  $$("#langChoice button, #drawerLang button").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.lang === lang)));
   applyStaticText();
   updateClock();
 
@@ -1277,6 +1355,181 @@ function updateClock() {
   el.todayLabel.textContent = now.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
   el.todayTag.textContent = now.toLocaleDateString(locale, { day: "numeric", month: "short" });
   if (el.pulseTag) el.pulseTag.textContent = el.todayTag.textContent;
+}
+
+/* ---------------------------- drawer & account ---------------------------- */
+
+let lastDrawerFocus = null;
+let catalogBound = false;
+
+function openDrawer() {
+  lastDrawerFocus = document.activeElement;
+  el.drawerScrim.hidden = false;
+  el.drawer.setAttribute("aria-hidden", "false");
+  el.menuBtn.setAttribute("aria-expanded", "true");
+  el.drawer.classList.add("is-open");
+  setTimeout(() => el.drawerClose.focus(), 80);
+}
+
+function closeDrawer() {
+  el.drawer.classList.remove("is-open");
+  el.drawer.setAttribute("aria-hidden", "true");
+  el.menuBtn.setAttribute("aria-expanded", "false");
+  el.drawerScrim.hidden = true;
+  if (lastDrawerFocus && lastDrawerFocus.focus) lastDrawerFocus.focus();
+}
+
+function renderAccount() {
+  const account = state.account;
+  const name = (account && account.name) || state.profile.name || t("guest");
+  const meta = account
+    ? (account.email || (account.phone ? `+91 ${account.phone}` : "")) || t("accountSignedIn")
+    : t("accountSignIn");
+  if (el.drawerName) el.drawerName.textContent = name;
+  if (el.drawerMeta) el.drawerMeta.textContent = meta;
+  if (el.drawerAvatar) {
+    el.drawerAvatar.textContent = (account && account.name ? name : "VK")
+      .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "VK";
+  }
+  if (el.drawerSignOut) el.drawerSignOut.hidden = !account;
+  if (el.accountState) el.accountState.textContent = account ? t("accountSignedIn") : t("accountSignIn");
+  if (el.accountLink) el.accountLink.classList.toggle("is-signed", Boolean(account));
+}
+
+function signOutAccount() {
+  try { localStorage.removeItem(ACCOUNT_KEY); } catch { /* storage may be blocked */ }
+  state.account = null;
+  renderAccount();
+  renderProfile();
+  closeDrawer();
+  toast(t("signedOut"));
+}
+
+function scrollToCard(node) {
+  closeDrawer();
+  if (!node) return;
+  node.scrollIntoView({ behavior: "smooth", block: "start" });
+  node.classList.add("is-flash");
+  setTimeout(() => node.classList.remove("is-flash"), 1200);
+}
+
+/* ---------------------------- mic check ---------------------------- */
+
+async function runMicCheck() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showBanner("error", t("micCheckFail"), t("errSupportSub"));
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    setMicBlocked(false);
+    hideBanner();
+    el.micCheck.classList.add("is-live");
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const bars = el.micLevel ? Array.from(el.micLevel.querySelectorAll("i")) : [];
+    if (!AudioCtx) {
+      stream.getTracks().forEach((track) => track.stop());
+      toast(t("micWorking"));
+      return;
+    }
+    const ctx = new AudioCtx();
+    const source = ctx.createMediaStreamSource(stream);
+    const analyser = ctx.createAnalyser();
+    analyser.fftSize = 128;
+    source.connect(analyser);
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    const started = performance.now();
+    let frame = 0;
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      stream.getTracks().forEach((track) => track.stop());
+      if (ctx.close) ctx.close();
+      el.micCheck.classList.remove("is-live");
+      toast(t("micWorking"));
+    };
+    const loop = () => {
+      analyser.getByteFrequencyData(data);
+      const avg = data.reduce((sum, value) => sum + value, 0) / data.length;
+      bars.forEach((bar, index) => {
+        const level = Math.min(100, Math.max(8, avg * (1 + index * 0.2) * 1.7));
+        bar.style.setProperty("--l", `${level}%`);
+      });
+      if (performance.now() - started < 2800) frame = requestAnimationFrame(loop);
+      else stop();
+    };
+    loop();
+  } catch {
+    setMicBlocked(true);
+    showBanner("error", t("micCheckFail"), t("errPermSub"));
+  }
+}
+
+/* ---------------------------- voice studio ---------------------------- */
+
+function updateStudio() {
+  const value = el.studioText.value.trim();
+  const parsed = parseSale(value);
+  el.studioSave.disabled = !parsed.ok;
+  if (!value) {
+    el.studioPreview.innerHTML = "";
+    return;
+  }
+  if (parsed.ok) {
+    const item = itemByKey(parsed.sale.item);
+    el.studioPreview.innerHTML = `<span class="preview__chip">✓ ${parsed.sale.qty}${parsed.sale.unit ? " " + parsed.sale.unit : ""} ${escapeHtml(itemName(item))} · ${money(parsed.sale.amount)}</span>`;
+  } else {
+    el.studioPreview.innerHTML = `<span class="preview__chip is-bad">${t("previewBad")}</span>`;
+  }
+}
+
+function openStudio(phrase) {
+  el.studio.hidden = false;
+  el.studioText.value = phrase;
+  updateStudio();
+  el.studioText.focus();
+  el.studioText.setSelectionRange(phrase.length, phrase.length);
+}
+
+function closeStudio() {
+  el.studio.hidden = true;
+  el.studioText.value = "";
+  el.studioPreview.innerHTML = "";
+}
+
+function saveStudio() {
+  const raw = el.studioText.value.trim();
+  const parsed = parseSale(raw);
+  if (!parsed.ok) {
+    showBanner("error", t("errParse"), t("errParseHint"));
+    return;
+  }
+  recordSale(parsed.sale, "voice", raw);
+  closeStudio();
+}
+
+/* ---------------------------- catalog slider ---------------------------- */
+
+function updateCatalogSlider() {
+  if (!el.catalog || !el.catalogPrev) return;
+  const max = el.catalog.scrollWidth - el.catalog.clientWidth;
+  el.catalogPrev.disabled = el.catalog.scrollLeft <= 4;
+  el.catalogNext.disabled = max <= 4 || el.catalog.scrollLeft >= max - 4;
+}
+
+function bindCatalogSlider() {
+  if (catalogBound || !el.catalogPrev) return;
+  catalogBound = true;
+  const track = el.catalog;
+  const step = () => Math.max(140, Math.round(track.clientWidth * 0.72));
+  el.catalogPrev.addEventListener("click", () => {
+    track.scrollLeft = Math.max(0, track.scrollLeft - step());
+  });
+  el.catalogNext.addEventListener("click", () => {
+    track.scrollLeft = Math.min(track.scrollWidth, track.scrollLeft + step());
+  });
+  track.addEventListener("scroll", updateCatalogSlider, { passive: true });
+  window.addEventListener("resize", updateCatalogSlider);
+  updateCatalogSlider();
 }
 
 function init() {
@@ -1403,6 +1656,39 @@ function init() {
   el.toggleVoice.addEventListener("click", () => setToggle("voiceConfirm", !state.settings.voiceConfirm));
   el.toggleTips.addEventListener("click", () => setToggle("tips", !state.settings.tips));
 
+  el.menuBtn.addEventListener("click", openDrawer);
+  el.drawerClose.addEventListener("click", closeDrawer);
+  el.drawerScrim.addEventListener("click", closeDrawer);
+  el.drawerSettingsBtn.addEventListener("click", () => scrollToCard($("#settingsCard")));
+  el.drawerHelpBtn.addEventListener("click", () => scrollToCard($("#tipsCard")));
+  el.drawerExportBtn.addEventListener("click", () => { closeDrawer(); el.exportAllBtn.click(); });
+  el.drawerSignOut.addEventListener("click", signOutAccount);
+  el.drawerTheme.addEventListener("click", () => {
+    applyTheme(state.settings.theme === "dark" ? "light" : "dark");
+  });
+  $$("#drawerLang button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (state.settings.lang !== btn.dataset.lang) applyLanguage(btn.dataset.lang, true);
+    });
+  });
+
+  el.micStage.addEventListener("click", (event) => {
+    const target = event.target.closest ? event.target.closest("#micCheck") : null;
+    if (target) runMicCheck();
+  });
+  el.studioText.addEventListener("input", updateStudio);
+  el.studioSave.addEventListener("click", saveStudio);
+  el.studioCancel.addEventListener("click", closeStudio);
+  el.studioRetry.addEventListener("click", () => { closeStudio(); startListening(); });
+  bindCatalogSlider();
+
+  window.addEventListener("storage", (event) => {
+    if (event.key !== ACCOUNT_KEY) return;
+    state.account = loadAccount();
+    renderAccount();
+    renderProfile();
+  });
+
   $("#editProfileBtn").addEventListener("click", openProfile);
   $("#profileClose").addEventListener("click", closeProfile);
   $("#profileCancel").addEventListener("click", closeProfile);
@@ -1423,6 +1709,7 @@ function init() {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && el.drawer.classList.contains("is-open")) { closeDrawer(); return; }
     if (event.key === "Escape" && !el.profileModal.hidden) { closeProfile(); return; }
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName);
     if (event.code === "Space" && !typing && el.profileModal.hidden) {
@@ -1442,4 +1729,4 @@ function init() {
 init();
 
 /* Exposed for manual verification in the browser console. */
-window.VoiceKhata = { parseSale, handleTranscript, state, render, applyLanguage, applyTheme };
+window.VoiceKhata = { parseSale, handleTranscript, runMicCheck, openStudio, closeStudio, state, render, applyLanguage, applyTheme };

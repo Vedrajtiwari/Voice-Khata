@@ -28,6 +28,22 @@ Gnani internship submission.
 - **Installable PWA** with an offline shell (`manifest.webmanifest` + `sw.js`).
 - Motion: staggered card reveals, pulsing mic ring, waveform while recording, animated counters, sliding segmented thumb, toast confirmations — all disabled under `prefers-reduced-motion`.
 
+### Accounts, Google and mobile OTP
+
+The app ships an account page at `/account.html` (also reachable from the three-line menu).
+It works out of the box in **demo mode**: the 6-digit OTP is shown on screen because no SMS
+provider is connected yet, and the session is stored on the device.
+
+To make it real, edit `web/config.js`:
+
+| Setting | What it enables |
+| --- | --- |
+| `googleClientId` | Real “Continue with Google”. Create an OAuth **Web application** client in Google Cloud Console, add `https://YOUR-USERNAME.github.io` (and `http://localhost:8765`) to Authorised JavaScript origins, then paste the client ID. |
+| `otpEndpoint` | Real SMS OTP. Point it at a small endpoint (a Cloudflare Worker is enough) that holds an MSG91/Twilio key and implements `POST {phone} → {ok:true}` and `POST {phone,code} → {ok:true,name?}`. The key must never live in the browser. |
+
+Until both are configured the account page says exactly what is missing. Passwords are never
+stored, and the verified account name/shop is used by the counter profile and drawer.
+
 ### Run the web app locally
 
 ```powershell
@@ -77,6 +93,8 @@ python check_api.py path\to\recording.wav
 | `web/app.js` | Parser, storage, i18n dictionary, rendering, speech, interactions |
 | `web/sw.js` | Offline cache for the installed app (network-first, so deploys update) |
 | `web/site/index.html`, `web/site/site.css` | The marketing site, served at `/site/` |
+| `web/account.html`, `web/account.css`, `web/account.js` | Login / sign-up with Google and mobile OTP |
+| `web/config.js` | Optional Google client ID and OTP endpoint (public values only) |
 | `app.py` | Streamlit UI for the Gnani-backed app |
 | `database.py` | SQLite schema and sales/customer queries |
 | `khata.py` | Multilingual parsing shared by the Python app |
@@ -99,6 +117,10 @@ git push -u origin main
 
 Your app: `https://YOUR-USERNAME.github.io/voice-khata/`
 Landing page: `https://YOUR-USERNAME.github.io/voice-khata/site/`
+Account page: `https://YOUR-USERNAME.github.io/voice-khata/account.html`
+
+Before going live, add that GitHub Pages origin to your Google OAuth client (see
+“Accounts, Google and mobile OTP” above) if you want Google sign-in on the public URL.
 
 On Android, open that URL in Chrome and choose **Add to Home screen** — it then
 runs full-screen from the home screen with offline support.

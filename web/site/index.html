@@ -309,6 +309,62 @@
     </div>
   </section>
 
+  <!-- STORIES SLIDER -->
+  <section class="section" id="stories">
+    <div class="shell">
+      <header class="section__head">
+        <p class="eyebrow"><span class="dot"></span> दुकानदारों से</p>
+        <h2 class="section__title">काउंटर पर बदलाव, तीन कहानियाँ।</h2>
+        <p class="section__sub">रोज़ की भीड़ में जो सच में काम आया।</p>
+      </header>
+
+      <div class="tst" id="tst">
+        <button class="tst__nav tst__nav--prev" id="tstPrev" type="button" aria-label="Previous story">
+          <svg class="ic"><use href="#i-arrow"/></svg>
+        </button>
+
+        <div class="tst__viewport">
+          <div class="tst__track" id="tstTrack">
+            <article class="tst__slide">
+              <div class="tst__quote">“</div>
+              <p class="tst__text">पहले कॉपी में लिखता था, शाम को जोड़ने बैठता था। अब बोल देता हूँ — पर्ची बन जाती है, कुल रकम भी बोल देता है।</p>
+              <div class="tst__person">
+                <span class="tst__avatar">RG</span>
+                <div><b>रमेश गुप्ता</b><span>गुप्ता किराना स्टोर · जयपुर</span></div>
+                <span class="tst__tag">हिंदी</span>
+              </div>
+            </article>
+
+            <article class="tst__slide">
+              <div class="tst__quote">“</div>
+              <p class="tst__text">ग्राहक की भीड़ में एक हाथ से बिक्री लिखी जाती है। देवनागरी अंक २, ५० भी समझ लेता है — यही सबसे अच्छा लगा।</p>
+              <div class="tst__person">
+                <span class="tst__avatar">SP</span>
+                <div><b>सुनीता पाटिल</b><span>पाटिल किराणा · पुणे</span></div>
+                <span class="tst__tag">मराठी</span>
+              </div>
+            </article>
+
+            <article class="tst__slide">
+              <div class="tst__quote">“</div>
+              <p class="tst__text">रोज़ शाम को CSV निकालकर WhatsApp पर भेज देता हूँ। हिसाब साफ़, और काग़ज़ का खाता पूरा बंद।</p>
+              <div class="tst__person">
+                <span class="tst__avatar">AK</span>
+                <div><b>अनवर खान</b><span>खान जनरल स्टोर · भोपाल</span></div>
+                <span class="tst__tag">English</span>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <button class="tst__nav tst__nav--next" id="tstNext" type="button" aria-label="Next story">
+          <svg class="ic"><use href="#i-arrow"/></svg>
+        </button>
+        <div class="tst__dots" id="tstDots" role="tablist" aria-label="Stories"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- FAQ -->
   <section class="section section--tint" id="faq">
     <div class="shell faq__grid">
@@ -505,6 +561,49 @@
     });
   });
   renderDemo();
+
+  /* ---------- stories slider ---------- */
+  const track = document.getElementById("tstTrack");
+  const slides = Array.from(track.children);
+  const dots = document.getElementById("tstDots");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let index = 0;
+  let auto = null;
+
+  slides.forEach((_, i) => {
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("role", "tab");
+    dot.setAttribute("aria-label", `Story ${i + 1}`);
+    dot.addEventListener("click", () => { go(i); restart(); });
+    dots.appendChild(dot);
+  });
+
+  function go(next) {
+    index = (next + slides.length) % slides.length;
+    track.style.transform = `translateX(-${index * 100}%)`;
+    Array.from(dots.children).forEach((dot, i) => {
+      dot.classList.toggle("is-active", i === index);
+      dot.setAttribute("aria-selected", String(i === index));
+    });
+    slides.forEach((slide, i) => slide.setAttribute("aria-hidden", String(i !== index)));
+  }
+
+  function restart() {
+    if (reduced) return;
+    clearInterval(auto);
+    auto = setInterval(() => go(index + 1), 6500);
+  }
+
+  document.getElementById("tstPrev").addEventListener("click", () => { go(index - 1); restart(); });
+  document.getElementById("tstNext").addEventListener("click", () => { go(index + 1); restart(); });
+  const tst = document.getElementById("tst");
+  tst.addEventListener("mouseenter", () => clearInterval(auto));
+  tst.addEventListener("mouseleave", restart);
+  tst.addEventListener("focusin", () => clearInterval(auto));
+  tst.addEventListener("focusout", restart);
+  go(0);
+  restart();
 </script>
 </body>
 </html>

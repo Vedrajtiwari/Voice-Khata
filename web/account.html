@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#16735B" />
+<meta name="description" content="VoiceKhata account — Google sign-in or mobile OTP to keep your shop ledger safe." />
+<title>खाता खोलें · VoiceKhata</title>
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="account.css" />
+</head>
+<body class="auth-body">
+
+<main class="auth">
+  <section class="auth__panel">
+    <a class="brand auth__brand" href="./">
+      <img src="icons/icon.svg" alt="" width="32" height="32" />
+      <span class="brand__name">VoiceKhata</span>
+    </a>
+
+    <div class="auth__pitch">
+      <p class="auth__eyebrow"><span class="dot dot--live"></span> दुकान का अपना खाता</p>
+      <h1>बोलो, बिक्री दर्ज हो —<br /><span>खाता हमेशा आपका।</span></h1>
+      <p class="auth__sub">
+        Google या मोबाइल OTP से साइन इन करें, ताकि दुकान का नाम, प्रोफ़ाइल और आज का खाता
+        आपके ही अकाउंट से जुड़ा रहे।
+      </p>
+      <ul class="auth__list">
+        <li><svg class="ic"><use href="#i-check"/></svg> Google से एक टैप में साइन इन</li>
+        <li><svg class="ic"><use href="#i-check"/></svg> मोबाइल पर 6 अंकों का OTP</li>
+        <li><svg class="ic"><use href="#i-check"/></svg> कोई पासवर्ड याद रखने की ज़रूरत नहीं</li>
+      </ul>
+    </div>
+
+    <div class="auth__proof">
+      <div class="auth__avatars"><span>RG</span><span>SP</span><span>AK</span><span>+</span></div>
+      <p><b>12,400+</b> किराना दुकानें हर दिन VoiceKhata पर बिक्री लिखती हैं।</p>
+    </div>
+  </section>
+
+  <section class="auth__card">
+    <a class="auth__back" href="./">
+      <svg class="ic"><use href="#i-arrow-left"/></svg> काउंटर पर वापस
+    </a>
+
+    <div class="auth__signed" id="signedIn" hidden>
+      <span class="avatar avatar--lg auth__avatar" id="signedAvatar">VK</span>
+      <h2>आप साइन इन हैं</h2>
+      <p class="auth__signedmeta" id="signedMeta"></p>
+      <div class="auth__signedactions">
+        <a class="btn btn--primary btn--block" href="./">काउंटर खोलें</a>
+        <button class="btn btn--ghost btn--block" id="signOutBtn" type="button">साइन आउट</button>
+      </div>
+    </div>
+
+    <div id="authFlow">
+      <header class="auth__head">
+        <h2>अपना खाता खोलें</h2>
+        <p>लॉगिन या नया खाता — दोनों एक ही जगह।</p>
+      </header>
+
+      <div class="auth__tabs" role="tablist" aria-label="Login or sign up">
+        <button class="auth__tab is-active" id="tabLogin" role="tab" aria-selected="true" aria-controls="paneLogin" type="button">लॉगिन</button>
+        <button class="auth__tab" id="tabSignup" role="tab" aria-selected="false" aria-controls="paneSignup" type="button">साइन अप</button>
+        <span class="auth__thumb" aria-hidden="true"></span>
+      </div>
+
+      <button class="google-btn" id="googleBtn" type="button">
+        <span class="google-btn__g" aria-hidden="true">G</span>
+        <span>Google से जारी रखें</span>
+      </button>
+      <div id="googleSlot" class="google-slot" hidden></div>
+
+      <div class="auth__divider"><span>या मोबाइल नंबर से</span></div>
+
+      <form id="authForm" novalidate>
+        <div class="auth__signupfields" id="signupFields" hidden>
+          <label class="auth__field">
+            <span>आपका नाम</span>
+            <input id="authName" type="text" autocomplete="name" placeholder="रमेश गुप्ता" />
+          </label>
+          <label class="auth__field">
+            <span>दुकान का नाम</span>
+            <input id="authShop" type="text" autocomplete="organization" placeholder="गुप्ता किराना स्टोर" />
+          </label>
+        </div>
+
+        <label class="auth__field">
+          <span>मोबाइल नंबर</span>
+          <span class="auth__phone">
+            <b>+91</b>
+            <input id="authPhone" type="tel" inputmode="numeric" maxlength="10" autocomplete="tel-national" placeholder="98765 43210" />
+          </span>
+        </label>
+
+        <button class="btn btn--primary btn--block" id="sendOtp" type="submit">
+          <svg class="ic"><use href="#i-mic"/></svg>
+          <span id="sendOtpText">OTP भेजें</span>
+        </button>
+
+        <div class="auth__otp" id="otpStep" hidden>
+          <p class="auth__otplabel">6 अंकों का OTP डालें <b id="otpPhone"></b></p>
+          <div class="auth__otpinputs" id="otpInputs">
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 1" />
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 2" />
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 3" />
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 4" />
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 5" />
+            <input inputmode="numeric" maxlength="1" aria-label="OTP digit 6" />
+          </div>
+          <p class="auth__demo" id="otpNote" hidden></p>
+          <div class="auth__otpactions">
+            <button class="btn btn--ghost btn--sm" id="resendOtp" type="button" disabled>फिर भेजें <span id="resendTimer">30s</span></button>
+            <button class="btn btn--primary btn--sm" id="verifyOtp" type="button">वेरिफ़ाई करें</button>
+          </div>
+        </div>
+
+        <p class="auth__msg" id="formMsg" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="auth__terms">
+        जारी रखने का मतलब है कि आप VoiceKhata की शर्तें और प्राइवेसी नीति मानते हैं।
+        आपका खाता सिर्फ़ आपकी दुकान के लिए है।
+      </p>
+    </div>
+
+    <p class="auth__config" id="configNote" hidden></p>
+  </section>
+</main>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8.5 21h7"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+</svg>
+
+<script src="config.js"></script>
+<script src="account.js"></script>
+</body>
+</html>

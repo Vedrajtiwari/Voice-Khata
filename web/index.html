@@ -32,6 +32,10 @@
   <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></symbol>
   <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5a7.5 7.5 0 0 1 15 0"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8l-4 4 4 4M6 12h9"/></symbol>
 </svg>
 
 <a class="skip" href="#entry" data-i18n="skip">Skip to sale entry</a>
@@ -39,6 +43,9 @@
 <header class="topbar">
   <div class="topbar__inner">
     <div class="topbar__left">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="drawer" data-i18n-label="menu">
+        <svg class="ic"><use href="#i-menu"/></svg>
+      </button>
       <span class="counter-pill">
         <span class="dot dot--live" aria-hidden="true"></span>
         <span data-i18n="counter">Counter 1</span>
@@ -112,7 +119,29 @@
             </button>
             <p class="mic-label" id="micLabel" aria-live="polite" data-i18n="micIdle">Tap to speak · Mic dabayein</p>
             <p class="mic-hint" id="micHint" hidden></p>
+            <button class="mic-check" id="micCheck" type="button">
+              <span class="mic-level" id="micLevel" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+              <span class="mic-check__text" data-i18n="micCheck">Check mic</span>
+            </button>
             <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+
+          <div class="studio" id="studio" hidden>
+            <div class="studio__head">
+              <span class="studio__badge"><svg class="ic"><use href="#i-mic"/></svg> <span data-i18n="studioHeard">Heard</span></span>
+              <button class="studio__retry" id="studioRetry" type="button">
+                <svg class="ic"><use href="#i-mic"/></svg> <span data-i18n="studioRetry">Speak again</span>
+              </button>
+            </div>
+            <textarea class="studio__text" id="studioText" rows="2" aria-label="Recognised sale" data-i18n-label="studioHeard"></textarea>
+            <p class="studio__hint" data-i18n="studioHint">Edit the text below, then save</p>
+            <div class="studio__preview" id="studioPreview"></div>
+            <div class="studio__actions">
+              <button class="btn btn--ghost btn--sm" id="studioCancel" type="button" data-i18n="cancel">Cancel</button>
+              <button class="btn btn--primary btn--sm" id="studioSave" type="button">
+                <svg class="ic"><use href="#i-check"/></svg> <span data-i18n="saveHeard">Save</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -247,7 +276,7 @@
 
     <aside class="col-side">
 
-      <section class="card side-card reveal" style="--i:3" aria-labelledby="settingsTitle">
+      <section class="card side-card reveal" id="settingsCard" style="--i:3" aria-labelledby="settingsTitle">
         <header class="side-card__head">
           <span class="side-card__icon side-card__icon--green"><svg class="ic"><use href="#i-settings"/></svg></span>
           <div>
@@ -344,6 +373,11 @@
           <div><span data-i18n="profileCity">City</span><b id="profileCity">—</b></div>
         </div>
 
+        <a class="btn btn--ghost btn--sm btn--block profile__account" href="account.html" id="accountLink">
+          <svg class="ic"><use href="#i-user"/></svg>
+          <span data-i18n="account">Account</span>
+          <span class="profile__accountstate" id="accountState" data-i18n="accountSignIn">Not signed in</span>
+        </a>
         <button class="btn btn--ghost btn--sm btn--block" id="editProfileBtn">
           <svg class="ic"><use href="#i-settings"/></svg> <span data-i18n="profileEdit">Edit details</span>
         </button>
@@ -357,7 +391,15 @@
             <p class="side-card__sub" data-i18n="catalogSub">Tap an item to fill the entry</p>
           </div>
         </header>
-        <div class="catalog" id="catalog"></div>
+        <div class="slider">
+          <button class="slider__btn slider__btn--prev" id="catalogPrev" type="button" aria-label="Previous items" data-i18n-label="catPrev">
+            <svg class="ic"><use href="#i-arrow-left"/></svg>
+          </button>
+          <div class="catalog" id="catalog"></div>
+          <button class="slider__btn slider__btn--next" id="catalogNext" type="button" aria-label="Next items" data-i18n-label="catNext">
+            <svg class="ic"><use href="#i-arrow-right"/></svg>
+          </button>
+        </div>
       </section>
 
       <section class="card side-card tips reveal" id="tipsCard" style="--i:6" aria-labelledby="tipsTitle">
@@ -421,8 +463,70 @@
   </form>
 </section>
 
+<div class="scrim scrim--drawer" id="drawerScrim" hidden></div>
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="Menu" data-i18n-label="menu">
+  <header class="drawer__head">
+    <a class="brand" href="./">
+      <img src="icons/icon.svg" alt="" width="28" height="28" />
+      <span class="brand__name">VoiceKhata</span>
+    </a>
+    <button class="icon-btn icon-btn--ghost" id="drawerClose" aria-label="Close" data-i18n-label="close">
+      <svg class="ic"><use href="#i-close"/></svg>
+    </button>
+  </header>
+
+  <a class="drawer__account" href="account.html" id="drawerAccount">
+    <span class="avatar avatar--lg" id="drawerAvatar">VK</span>
+    <span class="drawer__account-text">
+      <b id="drawerName">Guest</b>
+      <small id="drawerMeta" data-i18n="accountSignIn">Sign in to save your shop</small>
+    </span>
+    <svg class="ic drawer__chev"><use href="#i-arrow-right"/></svg>
+  </a>
+
+  <div class="drawer__block">
+    <p class="drawer__label"><svg class="ic"><use href="#i-settings"/></svg> <span data-i18n="quickSettings">Quick settings</span></p>
+    <div class="toggle-row drawer__toggle">
+      <div class="toggle-row__text">
+        <span class="toggle-row__label" data-i18n="themeLabel">Dark theme</span>
+        <span class="toggle-row__sub" data-i18n="themeSub">Pure black, white text</span>
+      </div>
+      <button class="switch" id="drawerTheme" role="switch" aria-checked="false" aria-label="Dark theme" data-i18n-label="themeLabel"><span class="switch__knob"></span></button>
+    </div>
+    <div class="choice choice--drawer" id="drawerLang" role="radiogroup" aria-label="Language" data-i18n-label="langLabel">
+      <button role="radio" aria-checked="true" data-lang="hi">हिंदी</button>
+      <button role="radio" aria-checked="false" data-lang="en">English</button>
+      <button role="radio" aria-checked="false" data-lang="mr">मराठी</button>
+    </div>
+  </div>
+
+  <nav class="drawer__nav" aria-label="Menu">
+    <button class="drawer__item" id="drawerSettingsBtn" type="button">
+      <span class="drawer__item-icon"><svg class="ic"><use href="#i-settings"/></svg></span>
+      <span data-i18n="sideSettings">Counter &amp; Voice</span>
+      <svg class="ic drawer__chev"><use href="#i-arrow-right"/></svg>
+    </button>
+    <button class="drawer__item" id="drawerHelpBtn" type="button">
+      <span class="drawer__item-icon"><svg class="ic"><use href="#i-bulb"/></svg></span>
+      <span data-i18n="tipsTitle">Counter speech tips</span>
+      <svg class="ic drawer__chev"><use href="#i-arrow-right"/></svg>
+    </button>
+    <button class="drawer__item" id="drawerExportBtn" type="button">
+      <span class="drawer__item-icon"><svg class="ic"><use href="#i-download"/></svg></span>
+      <span data-i18n="exportAll">Export all entries</span>
+    </button>
+    <button class="drawer__item drawer__item--danger" id="drawerSignOut" type="button" hidden>
+      <span class="drawer__item-icon"><svg class="ic"><use href="#i-logout"/></svg></span>
+      <span data-i18n="signOut">Sign out</span>
+    </button>
+  </nav>
+
+  <p class="drawer__foot"><span class="dot dot--live" aria-hidden="true"></span> <span data-i18n="footerLocal">Offline ready</span> · v2.1</p>
+</aside>
+
 <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 
+<script src="config.js"></script>
 <script src="app.js" type="module"></script>
 </body>
 </html>
