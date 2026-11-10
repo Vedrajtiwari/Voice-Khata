@@ -727,6 +727,9 @@ const el = {
   catalogNext: $("#catalogNext"),
   accountLink: $("#accountLink"),
   accountState: $("#accountState"),
+  accountChip: $("#accountChip"),
+  accountChipAvatar: $("#accountChipAvatar"),
+  accountChipText: $("#accountChipText"),
   saleInput: $("#saleInput"),
   preview: $("#preview"),
   banner: $("#banner"),
@@ -1699,6 +1702,16 @@ function renderAccount() {
   if (el.drawerSignOut) el.drawerSignOut.hidden = !account;
   if (el.accountState) el.accountState.textContent = account ? t("accountSignedIn") : t("accountSignIn");
   if (el.accountLink) el.accountLink.classList.toggle("is-signed", Boolean(account));
+  if (el.accountChip) {
+    const chipHidden = !account;
+    el.accountChip.hidden = chipHidden;
+    if (!chipHidden) {
+      const chipName = (account && account.name) || state.profile.name || t("guest");
+      const chipMeta = (account && account.shop) || (account && account.phone ? `+91 ${account.phone}` : "") || "";
+      el.accountChipAvatar.textContent = chipName.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "VK";
+      el.accountChipText.textContent = chipMeta ? `${chipName} · ${chipMeta}` : chipName;
+    }
+  }
 }
 
 function signOutAccount() {
