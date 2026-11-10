@@ -1,6 +1,6 @@
 /* VoiceKhata service worker — offline shell for the counter app. */
 
-const CACHE = "voicekhata-v4";
+const CACHE = "voicekhata-v5";
 const ASSETS = [
   "./",
   "./welcome.html",

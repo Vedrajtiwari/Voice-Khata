@@ -59,6 +59,10 @@ const I18N = {
     entrySub: "बोलकर तुरंत पर्ची बनाएं या कीबोर्ड से लिखें",
     micIdle: "बोलने के लिए दबाएं",
     micListening: "सुन रहा हूँ…",
+    micThinking: "समझ रहे हैं…",
+    voiceEngineOn: "✦ AI आवाज़",
+    voiceEngineOff: "ब्राउज़र आवाज़",
+    errUploadSub: "इंटरनेट या सर्वर जांचें, फिर दोबारा बोलें।",
     micProcessing: "समझ रहा हूँ…",
     micUnsupported: "यहाँ आवाज़ उपलब्ध नहीं",
     micUnsupportedHint: "लिखो टैब इस्तेमाल करें",
@@ -215,6 +219,10 @@ const I18N = {
     entrySub: "Speak to make a receipt instantly, or type it in",
     micIdle: "Tap to speak",
     micListening: "Listening…",
+    micThinking: "Understanding…",
+    voiceEngineOn: "✦ AI voice",
+    voiceEngineOff: "Browser voice",
+    errUploadSub: "Check the connection or the server, then try again.",
     micProcessing: "Understanding…",
     micUnsupported: "Voice unavailable here",
     micUnsupportedHint: "Use the Type tab instead",
@@ -371,6 +379,10 @@ const I18N = {
     entrySub: "बोलून लगेच पावती बनवा किंवा कीबोर्डने लिहा",
     micIdle: "बोलण्यासाठी दाबा",
     micListening: "ऐकत आहे…",
+    micThinking: "समजून घेत आहोत…",
+    voiceEngineOn: "✦ AI आवाज",
+    voiceEngineOff: "ब्राउझर आवाज",
+    errUploadSub: "इंटरनेट किंवा सर्व्हर तपासा, मग पुन्हा बोला.",
     micProcessing: "समजून घेत आहे…",
     micUnsupported: "इथे आवाज उपलब्ध नाही",
     micUnsupportedHint: "टाइप करा टॅब वापरा",
@@ -563,11 +575,32 @@ function parseSale(raw) {
   if (!item) return { ok: false, reason: "item" };
 
   const tokens = text.split(/[^0-9a-z\u0900-\u097F]+/i).filter(Boolean);
+  /* Compose place words so "do sau" reads as 200 and "ek hazar do sau" as
+     1200, instead of taking the last small word as the amount. */
+  const MULTIPLIERS = {
+    "सौ": 100, sau: 100, hundred: 100,
+    "हज़ार": 1000, "हजार": 1000, hazar: 1000, hazaar: 1000, thousand: 1000,
+  };
   const numbers = [];
+  let total = 0;
+  let group = null;
   for (const token of tokens) {
-    if (/^\d+(\.\d+)?$/.test(token)) numbers.push(Number(token));
-    else if (token in NUMBER_WORDS) numbers.push(NUMBER_WORDS[token]);
+    if (MULTIPLIERS[token]) {
+      total += (group === null ? 1 : group) * MULTIPLIERS[token];
+      group = null;
+      continue;
+    }
+    let value = null;
+    if (/^\d+(\.\d+)?$/.test(token)) value = Number(token);
+    else if (token in NUMBER_WORDS) value = NUMBER_WORDS[token];
+    if (value === null) continue;
+    if (group === null) group = value;
+    else if (group >= 100 && value < 100) group += value;
+    else if (total) { total += group; group = value; }
+    else { numbers.push(group); group = value; }
   }
+  if (group !== null) total += group;
+  if (total) numbers.push(total);
   if (!numbers.length) return { ok: false, reason: "numbers" };
 
   const unitHit = UNITS.find((u) => u.test.some((tok) => tokens.includes(tok)));
@@ -741,6 +774,7 @@ const el = {
   profileModal: $("#profileModal"),
   profileScrim: $("#profileScrim"),
   toasts: $("#toasts"),
+  voiceTag: $("#voiceTag"),
 };
 
 let filter = "all";
@@ -761,6 +795,22 @@ let micStream = null;
 let micRequest = null;
 let micCtx = null;
 let micChecking = false;
+
+/* Real speech: audio is recorded here and understood by Gnani Prisma through
+   the small server bridge. When the bridge is absent (static hosting) the
+   browser engine below is used instead, so the mic never goes dead. */
+const SERVER_STT_URL = String(((window.VOICEKHATA_CONFIG || {}).sttEndpoint) || "").trim();
+let serverStt = SERVER_STT_URL ? "unknown" : "off";
+let recorder = null;
+let recordBuffers = [];
+let recordProcessor = null;
+let recordSource = null;
+let recordGain = null;
+let recordSampleRate = 48000;
+let recordMaxTimer = 0;
+let recordHeardSpeech = false;
+let recordCancelled = false;
+let serverRecording = false;
 
 function setMicBlocked(blocked) {
   micBlocked = blocked;
@@ -884,13 +934,216 @@ function buildRecognition() {
   return rec;
 }
 
-function startListening() {
-  if (!speechOk) {
-    showBanner("error", t("errSupport"), t("errSupportSub"));
-    switchMode("manual");
+/* ------------------- speech engine selection & recording ------------------- */
+
+async function probeServerStt() {
+  if (!SERVER_STT_URL) { serverStt = "off"; renderVoiceEngine(); return false; }
+  try {
+    const res = await fetch(`${SERVER_STT_URL}?health=1`, { cache: "no-store" });
+    const body = res.ok ? await res.json() : null;
+    serverStt = body && body.stt ? "on" : "off";
+  } catch {
+    serverStt = "off";
+  }
+  renderVoiceEngine();
+  return serverStt === "on";
+}
+
+function renderVoiceEngine() {
+  if (!el.voiceTag || serverStt === "unknown") return;
+  const on = serverStt === "on";
+  el.voiceTag.hidden = false;
+  el.voiceTag.classList.toggle("tag--live", on);
+  el.voiceTag.textContent = on ? t("voiceEngineOn") : t("voiceEngineOff");
+}
+
+/* Record raw PCM and send a 16 kHz mono WAV. Gnani Prisma accepts WAV
+   reliably — webm/opus came back as HTTP 400 — and a plain WAV also covers
+   Safari, where MediaRecorder produces mp4 instead. */
+const TARGET_SAMPLE_RATE = 16000;
+
+function writeAscii(view, offset, text) {
+  for (let i = 0; i < text.length; i += 1) view.setUint8(offset + i, text.charCodeAt(i));
+}
+
+function downsample(input, fromRate, toRate = TARGET_SAMPLE_RATE) {
+  if (!input.length || toRate >= fromRate) return input;
+  const ratio = fromRate / toRate;
+  const length = Math.round(input.length / ratio);
+  const output = new Float32Array(length);
+  for (let i = 0; i < length; i += 1) {
+    const start = Math.floor(i * ratio);
+    const end = Math.min(input.length, Math.floor((i + 1) * ratio));
+    let sum = 0;
+    for (let j = start; j < end; j += 1) sum += input[j];
+    output[i] = end > start ? sum / (end - start) : 0;
+  }
+  return output;
+}
+
+function encodeWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  writeAscii(view, 0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeAscii(view, 8, "WAVE");
+  writeAscii(view, 12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(view, 36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  let offset = 44;
+  for (let i = 0; i < samples.length; i += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  }
+  return buffer;
+}
+
+function resetRecordingUi() {
+  serverRecording = false;
+  listening = false;
+  if (recordMaxTimer) clearTimeout(recordMaxTimer);
+  recordMaxTimer = 0;
+  el.micStage.classList.remove("is-recording", "is-processing");
+  el.micStage.style.removeProperty("--level");
+  el.micBtn.setAttribute("aria-pressed", "false");
+  if (!micBlocked) el.micLabel.textContent = t("micIdle");
+}
+
+async function startServerRecording(streamPromise) {
+  if (listening) return;
+  const stream = await streamPromise;
+  if (!stream) {
+    setMicBlocked(true);
+    showBanner("error", t("errPerm"), t("errPermSub"));
     return;
   }
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) { startBrowserRecognition(); return; }
+  try {
+    if (!micCtx || micCtx.state === "closed") micCtx = new AudioCtx();
+    if (micCtx.state === "suspended") await micCtx.resume();
+    recordSampleRate = micCtx.sampleRate || 48000;
+    recordSource = micCtx.createMediaStreamSource(stream);
+    recordProcessor = micCtx.createScriptProcessor(4096, 1, 1);
+    recordGain = micCtx.createGain();
+    recordGain.gain.value = 0;
+  } catch {
+    startBrowserRecognition();
+    return;
+  }
+  recordBuffers = [];
+  recordCancelled = false;
+  recordHeardSpeech = false;
+  let seconds = 0;
+  let lastLoud = performance.now();
+  recordSource.connect(recordProcessor);
+  recordProcessor.connect(recordGain);
+  recordGain.connect(micCtx.destination);
+  recordProcessor.onaudioprocess = (event) => {
+    const input = event.inputBuffer.getChannelData(0);
+    let peak = 0;
+    for (let i = 0; i < input.length; i += 1) peak = Math.max(peak, Math.abs(input[i]));
+    const chunk = new Float32Array(input.length);
+    chunk.set(input);
+    recordBuffers.push(chunk);
+    seconds += input.length / recordSampleRate;
+    el.micStage.style.setProperty("--level", peak.toFixed(3));
+    const now = performance.now();
+    if (peak > 0.03) {
+      recordHeardSpeech = true;
+      lastLoud = now;
+    } else if (recordHeardSpeech && now - lastLoud > 1100) {
+      stopServerRecording();
+      return;
+    }
+    if (seconds >= 12) stopServerRecording();
+  };
+  listening = true;
+  serverRecording = true;
+  el.micStage.classList.add("is-recording");
+  el.micBtn.setAttribute("aria-pressed", "true");
+  el.micLabel.textContent = t("micListening");
+  recordMaxTimer = setTimeout(stopServerRecording, 12500);
+}
+
+function stopServerRecording() {
+  if (!serverRecording) return;
+  serverRecording = false;
+  listening = false;
+  if (recordProcessor) {
+    recordProcessor.onaudioprocess = null;
+    try { recordProcessor.disconnect(); } catch { /* detached */ }
+  }
+  if (recordSource) { try { recordSource.disconnect(); } catch { /* detached */ } }
+  if (recordGain) { try { recordGain.disconnect(); } catch { /* detached */ } }
+  recordProcessor = null;
+  recordSource = null;
+  recordGain = null;
+  finishServerRecording();
+}
+
+async function finishServerRecording() {
+  if (recordMaxTimer) clearTimeout(recordMaxTimer);
+  recordMaxTimer = 0;
+  el.micStage.classList.remove("is-recording");
+  el.micStage.style.removeProperty("--level");
+  el.micBtn.setAttribute("aria-pressed", "false");
+  const cancelled = recordCancelled;
+  const heardSpeech = recordHeardSpeech;
+  const rate = recordSampleRate;
+  const buffers = recordBuffers;
+  recordBuffers = [];
+  recordCancelled = false;
+  const total = buffers.reduce((sum, chunk) => sum + chunk.length, 0);
+  if (cancelled) {
+    if (!micBlocked) el.micLabel.textContent = t("micIdle");
+    return;
+  }
+  if (!heardSpeech || total / rate < 0.35) {
+    if (!micBlocked) el.micLabel.textContent = t("micIdle");
+    showBanner("error", t("errNoSpeech"), t("errNoSpeechSub"));
+    return;
+  }
+  const merged = new Float32Array(total);
+  let offset = 0;
+  buffers.forEach((chunk) => { merged.set(chunk, offset); offset += chunk.length; });
+  const wav = encodeWav(downsample(merged, rate), TARGET_SAMPLE_RATE);
+  el.micStage.classList.add("is-processing");
+  el.micLabel.textContent = t("micThinking");
+  try {
+    const res = await fetch(`${SERVER_STT_URL}?lang=${encodeURIComponent(state.settings.lang)}`, {
+      method: "POST",
+      headers: { "Content-Type": "audio/wav" },
+      body: wav,
+      cache: "no-store",
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error((body && body.error) || `HTTP ${res.status}`);
+    const text = String((body && body.text) || "").trim();
+    if (!text) {
+      showBanner("error", t("errNoSpeech"), t("errNoSpeechSub"));
+      return;
+    }
+    handleTranscript(text);
+  } catch (error) {
+    console.warn("VoiceKhata: speech bridge failed", error);
+    showBanner("error", t("errVoice"), t("errUploadSub"));
+  } finally {
+    resetRecordingUi();
+  }
+}
+
+function startListening() {
   if (listening) {
+    if (serverRecording) { stopServerRecording(); return; }
     try { recognition && recognition.stop(); } catch { /* already stopping */ }
     return;
   }
@@ -902,6 +1155,25 @@ function startListening() {
     return;
   }
   hideBanner();
+  if (!SERVER_STT_URL) { startBrowserRecognition(); return; }
+
+  /* Ask for the mic right inside the tap: everything below is async and a
+     deferred getUserMedia loses the browser's user activation. */
+  const streamPromise = ensureMicStream();
+  if (serverStt === "on") { startServerRecording(streamPromise); return; }
+  if (serverStt === "off") { startBrowserRecognition(); return; }
+  probeServerStt().then((ok) => {
+    if (ok) startServerRecording(streamPromise);
+    else startBrowserRecognition();
+  });
+}
+
+function startBrowserRecognition() {
+  if (!speechOk) {
+    showBanner("error", t("errSupport"), t("errSupportSub"));
+    switchMode("manual");
+    return;
+  }
   if (!recognition) recognition = buildRecognition();
   recognition.lang = LANGS[state.settings.lang].speech;
   /* Start right inside the tap. Awaiting getUserMedia here used to drop the
@@ -1301,6 +1573,7 @@ function applyLanguage(lang, notify = false) {
   }
 
   if (recognition) recognition.lang = copy.speech;
+  renderVoiceEngine();
   persist();
   render();
   renderCatalog();
@@ -1775,6 +2048,8 @@ function init() {
   updateClock();
   setInterval(updateClock, 20000);
 
+  if (SERVER_STT_URL) probeServerStt();
+
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
   }
@@ -1783,4 +2058,4 @@ function init() {
 init();
 
 /* Exposed for manual verification in the browser console. */
-window.VoiceKhata = { parseSale, handleTranscript, runMicCheck, openStudio, closeStudio, state, render, applyLanguage, applyTheme };
+window.VoiceKhata = { parseSale, handleTranscript, runMicCheck, openStudio, closeStudio, state, render, applyLanguage, applyTheme, probeServerStt, encodeWav, downsample };

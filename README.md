@@ -34,6 +34,25 @@ app is opened in a browser or installed from Android.
 - **Installable PWA** with an offline shell (`manifest.webmanifest` + `sw.js`).
 - Motion: staggered card reveals, pulsing mic ring, waveform while recording, animated counters, sliding segmented thumb, toast confirmations — all disabled under `prefers-reduced-motion`.
 
+### Real speech (Gnani bridge)
+
+The browser's own recognition is only the fallback. For the shopkeeper's Hindi
+and Marathi the counter records the clip and posts it to `stt_server.py`, which
+forwards it to Gnani Prisma STT with the language selected in the header
+(`hi-IN`, `mr-IN`, `en-IN`). The API key stays on the server and never reaches
+the browser.
+
+```powershell
+.\.venv\Scripts\python.exe stt_server.py
+```
+
+Open `http://localhost:8765/welcome.html`; the startup banner also prints the
+phone URL for the same Wi-Fi. `GET /api/stt?health=1` reports whether the bridge
+is live, so when it is missing (GitHub Pages) the app falls back to browser
+speech automatically instead of breaking. `tools/stt_probe.py` replays a set of
+real counter phrases through TTS and STT, which makes changes to the model, a
+language code or the parser measurable.
+
 ### Accounts, Google and mobile OTP
 
 The app ships an account page at `/account.html` (also reachable from the three-line menu).

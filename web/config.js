@@ -19,6 +19,12 @@ window.VOICEKHATA_CONFIG = {
      Leave empty to use the on-screen demo code. */
   otpEndpoint: "",
 
+  /* Real speech-to-text through the small Python bridge (`stt_server.py`).
+     The bridge keeps the Gnani key on the server, records better Hindi/Marathi
+     than the browser engine, and answers `?health=1` so the app can fall back
+     automatically when it is not running (for example on GitHub Pages). */
+  sttEndpoint: "/api/stt",
+
   /* Shown on the account page when demo OTP is active. */
   demoMode: true,
 };

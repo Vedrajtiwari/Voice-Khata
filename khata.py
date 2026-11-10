@@ -44,20 +44,50 @@ DEVANAGARI = str.maketrans("०१२३४५६७८९", "0123456789")
 CSV_FIELDS = ["date", "time", "item", "qty", "amount"]
 
 
+MULTIPLIERS = {
+    "सौ": 100, "sau": 100, "hundred": 100,
+    "हज़ार": 1000, "हजार": 1000, "hazaar": 1000, "hazar": 1000, "thousand": 1000,
+}
+
+
 def _numbers(text):
     """Extract numeric values from ASCII, Devanagari, or Hindi-word text.
 
     Real speech transcripts arrive with currency symbols and thousands
-    separators ("₹50", "₹1,200"), so those are normalised before parsing.
+    separators ("₹50", "₹1,200"), and shopkeepers say "do sau" rather than
+    "two hundred", so place words are composed instead of read as separate
+    amounts.
     """
     nums = []
     text = text.translate(DEVANAGARI).replace("₹", " ").replace("$", " ").replace(",", "")
+    total = 0        # magnitude accumulated in the current number ("ek hazar")
+    group = None     # plain value waiting to be flushed ("do" before "sau")
     for tok in re.findall(r"\S+", text.lower(), flags=re.UNICODE):
         tok = tok.strip(".,!?;:()[]{}\"'")
+        if tok in MULTIPLIERS:
+            total += (group if group is not None else 1) * MULTIPLIERS[tok]
+            group = None
+            continue
         if tok.isdigit():
-            nums.append(int(tok))
+            value = int(tok)
         elif tok in NUMBER_WORDS:
-            nums.append(NUMBER_WORDS[tok])
+            value = NUMBER_WORDS[tok]
+        else:
+            continue
+        if group is None:
+            group = value
+        elif group >= 100 and value < 100:
+            group += value            # "do sau pachas" -> 250
+        elif total:
+            total += group            # "ek hazar" + "do sau" -> 1200
+            group = value
+        else:
+            nums.append(group)        # two plain numbers: qty, price
+            group = value
+    if group is not None:
+        total += group
+    if total:
+        nums.append(total)
     return nums
 
 

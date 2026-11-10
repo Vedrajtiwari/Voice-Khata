@@ -1,4 +1,6 @@
 import os
+import time
+
 import requests
 
 BASE_URL = "https://api.vachana.ai"
@@ -39,21 +41,40 @@ def _check(resp):
     resp.raise_for_status()
 
 
-def transcribe(audio_bytes, language_code=LANGUAGE):
-    """Prisma speech-to-text. Returns the transcript string."""
+def transcribe(audio_bytes, language_code=LANGUAGE, filename="recording.wav",
+               content_type="audio/wav"):
+    """Prisma speech-to-text. Returns the transcript string.
+
+    The gateway occasionally answers 502/504 on a cold model; that is a server
+    hiccup, not a bad recording, so retry briefly instead of losing the sale.
+    """
     payload = {"language_code": language_code}
     if STT_MODEL:
         payload["model"] = STT_MODEL
-    resp = requests.post(
-        f"{BASE_URL}/stt/v3",
-        headers={"X-API-Key-ID": _api_key()},
-        files={"audio_file": ("recording.wav", audio_bytes, "audio/wav")},
-        data=payload,
-        timeout=60,
-    )
-    _check(resp)
-    body = resp.json()
-    return body.get("text") or body.get("transcript") or ""
+    last_error = None
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                f"{BASE_URL}/stt/v3",
+                headers={"X-API-Key-ID": _api_key()},
+                files={"audio_file": (filename, audio_bytes, content_type)},
+                data=payload,
+                timeout=60,
+            )
+        except requests.RequestException as exc:
+            last_error = exc
+        else:
+            if resp.status_code not in (429, 500, 502, 503, 504) or attempt == 2:
+                _check(resp)
+                body = resp.json()
+                return body.get("text") or body.get("transcript") or ""
+            last_error = RuntimeError(f"Gateway {resp.status_code}")
+            if resp.status_code == 429:
+                # Busy model: wait noticeably longer than a gateway hiccup.
+                time.sleep(2.5 * (attempt + 1))
+                continue
+        time.sleep(0.8 * (attempt + 1))
+    raise RuntimeError(f"STT request failed: {last_error}")
 
 
 def speak(text, language_code=LANGUAGE):
